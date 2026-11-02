@@ -1,0 +1,12 @@
+# Keep LF line endings in the repository and the working tree, also on Windows:
+# the Makefile, shell steps and YAML run inside Linux containers and CI.
+* text=auto eol=lf
+
+# Binary files: never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
