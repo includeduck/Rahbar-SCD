@@ -1,0 +1,82 @@
+# Copy this file to corpus/sources.yaml, keep the documents you want, drop or add
+# others, then run:  python corpus/fetch.py
+#
+# Every entry needs a name and a url. doc_version and superseded become chunk
+# metadata (section 3.1): they are how your retriever tells the current rule from
+# the repealed one.
+#
+# These FAST-NUCES documents were checked on 1 November 2026. Websites change:
+# confirm each one downloads, and check the file is what its name says.
+# Re-checked 2 November 2026: all nine downloaded; page counts and text layers below.
+# Find more with:  python corpus/fetch.py --list https://www.nu.edu.pk/Downloads
+
+documents:
+
+  # Property 2: two versions of one policy (and 7: exact clause numbers)
+  - name: Undergraduate Academic Rules (Aug 2023)
+    url: http://nu.edu.pk/public/downloads/Academic-Rules-Undergrad-Aug-2023.pdf
+    doc_version: "2023-08"
+    superseded: true
+    notes: >-
+      Downloads (26 pages, 14.9 MB), but 24 of 26 pages have no text layer (Corel export):
+      only the cover and back page extract. Needs OCR before version questions can use it.
+
+  - name: Academic Rules Handbook (Jun 2026)
+    url: https://nu.edu.pk/public/downloads/Academic_Rules_Handbook_2026.pdf
+    doc_version: "2026-06"
+    superseded: false
+    notes: >-
+      58 pages (5 without text: cover and dividers). Clause 1.21 (100% attendance, up to 20%
+      condonable by the HoD) on p10; 5.4 (minimum CGPA 2.00 to avoid academic warning) on p24.
+
+  - name: Prospectus 2026 - Academic Rules and Regulations
+    url: https://nu.edu.pk/Admissions/ProspectusUpload/Academic Rules and Regulations.pdf
+    doc_version: "2026"
+    superseded: false
+    notes: The same rules in 5 pages with different clause numbers (attendance is clause 1 here).
+
+  # Property 5: long definitions
+  - name: Student Handbook (Jun 2026)
+    url: https://nu.edu.pk/public/downloads/Student_Handbook_2026.pdf
+    doc_version: "2026-06"
+    superseded: false
+
+  # Property 4: tables, and versions over time
+  - name: Annual Report 2019-20
+    url: https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2019-20.pdf
+    doc_version: "2019-20"
+    superseded: true
+    notes: >-
+      Older edition of the same report; whole passages (campus descriptions, transport)
+      repeat verbatim in 2023-24, so it is marked superseded to keep the current edition first.
+
+  - name: Annual Report 2023-24
+    url: https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2023-24.pdf
+    doc_version: "2023-24"
+    superseded: false
+
+  # Property 4: tables in HTML pages (your extract stage must handle .html)
+  - name: Fee Structure page
+    url: https://www.nu.edu.pk/Admissions/FeeStructure
+    doc_version: "2026-27"
+    superseded: false
+
+  - name: Grading page
+    url: https://www.nu.edu.pk/Student/Grading
+    doc_version: "2026"
+    superseded: false
+
+  # Property 3: scanned. Confirmed 2 Nov 2026: 8 pages, no fonts on any page, one image
+  # per page (pypdf). Re-confirm with:  pdffonts corpus/raw/<file>.pdf  (empty list = scan)
+  - name: Faculty Entrepreneurship and Technical Start-ups Policy
+    url: https://nu.edu.pk/OricResources/ResearchPolicies/27.pdf?20220530
+    doc_version: "2022-05"
+    superseded: false
+
+  # Property 6: a deliberately absent topic. Leave the document that covers it OUT,
+  # and write must-abstain golden questions about it. Our choice: hostel rules
+  # (allotment, fees, conduct). Transport is NOT absent: both annual reports describe
+  # the bus service per campus. The Student Handbook and annual reports only say which
+  # campuses have hostels, so questions about that are answerable, not must-abstain.
+  # - name: Prospectus - Transport and Hostel Facilities
+  #   url: https://nu.edu.pk/Admissions/ProspectusUpload/Transport and Hostel Facilities.pdf
