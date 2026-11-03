@@ -1,0 +1,86 @@
+# The vector store: a StatefulSet, not a Deployment (docs/ARCHITECTURE.md). Its pod keeps
+# a stable identity and its own PVC from volumeClaimTemplates, so a restart or reschedule
+# reattaches the same index instead of starting empty.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: chroma
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: chroma
+    app.kubernetes.io/part-of: rahbar
+spec:
+  serviceName: chroma
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chroma
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chroma
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: chroma
+      automountServiceAccountToken: false
+      # Without this, Kubernetes injects CHROMA_PORT=tcp://<ip>:8000 (from the Service named
+      # chroma) and Chroma 1.x, which reads every CHROMA_* variable as config, panics.
+      enableServiceLinks: false
+      # The image defaults to root; it runs fine as 1000 with /data on the PVC (fsGroup).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: chroma
+          # Same version as chromadb-client in api/ and indexer/ requirements.txt.
+          image: chromadb/chroma:1.0.12
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          volumeMounts:
+            - name: chroma-data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet: { path: /api/v2/heartbeat, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: { path: /api/v2/heartbeat, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
+          # Initial values; phase 11 sets them from `kubectl top pods`.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: chroma-data
+        labels:
+          app.kubernetes.io/name: chroma
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi

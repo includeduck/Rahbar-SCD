@@ -1,0 +1,16 @@
+# Local minikube: images built with `make images` and loaded with `minikube image load`
+# (TAG=dev by default). The base already uses imagePullPolicy: IfNotPresent.
+#   kubectl apply -k k8s/overlays/dev
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: rahbar-api
+    newTag: dev
+  - name: rahbar-ui
+    newTag: dev
+  - name: rahbar-indexer
+    newTag: dev

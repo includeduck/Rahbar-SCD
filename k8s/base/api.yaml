@@ -1,0 +1,95 @@
+# The api: reads the index on every question and never writes it (section 4.2).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: rahbar
+spec:
+  # Three readers. The HPA (phase 4) takes over the count between 3 and 8.
+  replicas: 3
+  # One extra pod at a time, never one fewer: a rollout keeps three serving (section 4.6).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: api
+      automountServiceAccountToken: false
+      # We find Services by DNS name. Service-link variables (CHROMA_PORT=tcp://...) would
+      # only shadow our ConfigMap keys of the same name.
+      enableServiceLinks: false
+      # preStop (10 s) plus time for in-flight answers, which can wait on the LLM.
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: rahbar-api
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+            # LLM_API_KEY for the hosted provider. Created with `make secret`, never from a
+            # committed file; optional so the stub and Ollama modes start without it.
+            - secretRef:
+                name: rahbar-secret
+                optional: true
+          # The three probes from section 4.3, with their exact values.
+          startupProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /readyz, port: 8000 }
+            periodSeconds: 10
+            failureThreshold: 3
+          # Readiness drops the pod from the Service first; the sleep lets the endpoint
+          # removal reach the Ingress before uvicorn stops accepting connections.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+          # Initial values; phase 11 sets them from `kubectl top pods`. requests.cpu is the
+          # HPA's denominator, so it must be set.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,21 @@
+# Images from Docker Hub, deployed by commit SHA, never :latest (section 6).
+# cd.yml sets the real repository and tag before applying, e.g.:
+#   cd k8s/overlays/prod
+#   kustomize edit set image rahbar-api=docker.io/<user>/rahbar-api:${GITHUB_SHA}
+# The values below are placeholders so the overlay still builds and validates in CI.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: rahbar-api
+    newName: docker.io/dockerhub-user/rahbar-api
+    newTag: set-by-cd
+  - name: rahbar-ui
+    newName: docker.io/dockerhub-user/rahbar-ui
+    newTag: set-by-cd
+  - name: rahbar-indexer
+    newName: docker.io/dockerhub-user/rahbar-indexer
+    newTag: set-by-cd
