@@ -1,0 +1,27 @@
+# minikube only: the api (generation) and the indexer (embeddings) reach Ollama running on
+# the laptop. The address is what host.minikube.internal resolves to inside the node:
+#   minikube ssh "grep host.minikube.internal /etc/hosts"
+# 192.168.65.254 with Docker Desktop's docker driver; 192.168.49.1 on Linux. Change it if
+# yours differs, and run Ollama with OLLAMA_HOST=0.0.0.0 so it listens beyond localhost.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-host-egress
+  namespace: rahbar
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [api, indexer]
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 192.168.65.254/32
+        - ipBlock:
+            cidr: 192.168.49.1/32
+      ports:
+        - protocol: TCP
+          port: 11434
