@@ -8,7 +8,8 @@ know a phase is done. The reasoning behind each decision is in
 [`docs/DEVELOPMENT-PLAN.md`](docs/DEVELOPMENT-PLAN.md); the handout section for each item is
 given in brackets, e.g. (§4.3).
 
-**Status as of Tue 3 Nov:** phases 0, 1 and 2 are done. Next: phases 3 and 6 in parallel.
+**Status as of Tue 3 Nov (evening):** phases 0–2 are done; phase 3 is done except ADR 0001,
+and about half of phase 4 came with it. Next: the rest of phase 4, and phase 6 (Zain).
 
 ---
 
@@ -33,8 +34,8 @@ able to explain every part in a viva.
 | 0 | [Repository and setup](#phase-0-repository-and-setup) | Wasay | Mon 2 | ✅ Done |
 | 1 | [Corpus](#phase-1-corpus) | Wasay | Mon 2 – Tue 3 | ✅ Done (one follow-up) |
 | 2 | [Container images](#phase-2-container-images) | Wasay | Tue 3 | ✅ Done |
-| 3 | [Kubernetes around the stubs](#phase-3-kubernetes-around-the-stubs) | Wasay | Tue 3 – Wed 4 | ⏳ Next |
-| 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay (+ Zain for `/readyz`) | Wed 4 | ⬜ |
+| 3 | [Kubernetes around the stubs](#phase-3-kubernetes-around-the-stubs) | Wasay | Tue 3 – Wed 4 | ✅ Done (ADR 0001 left) |
+| 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay (+ Zain for `/readyz`) | Wed 4 | ⏳ About half done |
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Wed 4 | ⬜ |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ⏳ Next |
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ⬜ |
@@ -140,21 +141,39 @@ flowchart LR
 Goal: the whole system runs on minikube with `RETRIEVER=stub`, `LLM_PROVIDER=stub` and the
 dummy index, and answers through the Ingress.
 
-- [ ] `make cluster` (minikube with **Calico**, metrics-server, ingress)
-- [ ] `k8s/base/`: namespace `rahbar`, ConfigMap, one ServiceAccount per workload
-- [ ] Chroma **StatefulSet** with `volumeClaimTemplates` (not a Deployment), ClusterIP Service
-- [ ] Redis Deployment + PVC (`appendonly yes`), ClusterIP Service
-- [ ] api Deployment (3 replicas, stubs), ui Deployment, their Services
-- [ ] Ingress: `/` → ui, `/api` → api, host `rahbar.local`
-- [ ] indexer **Job** (`restartPolicy: OnFailure`, `backoffLimit`) running `--dummy`
-- [ ] **CronJob** `reindex`, weekly, same image and arguments as the Job
-- [ ] `k8s/overlays/dev` (local images, `imagePullPolicy: IfNotPresent`) and
-      `k8s/overlays/prod` (Docker Hub images, tag set by CD)
-- [ ] `secret.placeholder.yaml` with `REPLACE_ME`, **not** listed in `kustomization.yaml`
-- [ ] ADR [`docs/adr/0001-indexer-as-job.md`](docs/adr/) in our own words (the marker reads it first)
+- [x] `make cluster` (minikube 1.39 / Kubernetes 1.37 with **Calico**, metrics-server, ingress)
+- [x] `k8s/base/`: namespace `rahbar`, ConfigMap, one ServiceAccount per workload
+- [x] Chroma **StatefulSet** with `volumeClaimTemplates` (not a Deployment), ClusterIP Service
+- [x] Redis Deployment + PVC (`appendonly yes`), ClusterIP Service
+- [x] api Deployment (3 replicas, stubs), ui Deployment (2 replicas), their Services
+- [x] Ingress: `/` → ui, `/api` → api, host `rahbar.local`
+- [x] indexer **Job** (`restartPolicy: OnFailure`, `backoffLimit: 4`) running `--dummy`, with
+      an initContainer that waits for Chroma's heartbeat
+- [x] **CronJob** `reindex`, weekly (Sun 03:00 PKT), same image and arguments as the Job
+- [x] `k8s/overlays/dev` (local `:dev` images) and `k8s/overlays/prod` (Docker Hub images,
+      tag set by CD; placeholders until phase 10)
+- [x] `secret.placeholder.yaml` with `REPLACE_ME`, **not** listed in `kustomization.yaml`
+- [ ] ADR [`docs/adr/0001-indexer-as-job.md`](docs/adr/) **in our own words** (the marker reads
+      it first). Wasay writes this one; the reasoning is in §4.2 and in the plan, D1
 
 **Done when:** `make images apply`, then `make ask Q="..."` returns the stub answer through the
-Ingress, and the dummy index survives deleting the Chroma pod.
+Ingress, and the dummy index survives deleting the Chroma pod. ✅ Verified 3 Nov: stub answer
+through the Ingress with the request id in the api's logs; 3 dummy chunks still there after
+`kubectl delete pod chroma-0`.
+
+**Two things that broke on the way** (material for Engineering Note 7):
+1. `chroma-0` crash-looped with `expected u16 for key "PORT"`. Kubernetes injects
+   `CHROMA_PORT=tcp://<ip>:8000` into every pod because a Service is named `chroma`, and
+   Chroma 1.x reads every `CHROMA_*` variable as its own config. Fix: `enableServiceLinks: false`
+   on every pod.
+2. After that fix, the StatefulSet still did not replace the crashing pod: a rolling update
+   waits for the current pod to become Ready, which a crash-looping pod never does. Fix:
+   `kubectl delete pod chroma-0` by hand. Meanwhile the indexer Job had burned its
+   `backoffLimit` against the dead Chroma, hence the wait-for-chroma initContainer.
+
+On Windows with the docker driver, reach the Ingress with `minikube tunnel` (needs an admin
+terminal) or `kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 18088:80`
+and the header `Host: rahbar.local`.
 
 At stake: −8 Chroma/Redis without a PVC or exposed outside the cluster; −10 indexing at API
 startup; −5 anything in the `default` namespace.
@@ -163,18 +182,24 @@ startup; −5 anything in the `default` namespace.
 
 **Owner:** Wasay; Zain writes `/readyz` and the pin check · **When:** Wed 4 · (§4.3–§4.7)
 
-- [ ] api probes exactly as §4.3: startup and liveness on `/healthz`, readiness on `/readyz`
+Done early, in phase 3: probes, requests and limits, the rolling-update settings and the
+security contexts. The checker's Kubernetes section now fails only on the HPA and the
+NetworkPolicy.
+
+- [x] api probes exactly as §4.3: startup and liveness on `/healthz`, readiness on `/readyz`
 - [ ] **`/readyz`** (code): 200 only if Chroma is reachable, the collection is non-empty, Redis
       answers, and the embedding model matches; otherwise 503 naming what failed
 - [ ] **Embedding-pin guardrail** (code): the API compares the collection's `embed_model`
       with its `EMBED_MODEL`; on mismatch it stays not-ready and logs both values.
       Demo: the dummy index says `dummy-768`, so a real model name gives `0/1 READY`
-- [ ] Requests and limits on **every** container, including the Job
+- [x] Requests and limits on **every** container, including the Job and its initContainer
+      (initial values; phase 11 sets them from `kubectl top`)
 - [ ] HPA on api: `autoscaling/v2`, min 3, max 8, CPU; shows a real %, not `<unknown>`
-- [ ] Rolling update `maxSurge: 1`, `maxUnavailable: 0`, `terminationGracePeriodSeconds`,
-      `preStop` sleep
-- [ ] Security context on every pod: `runAsNonRoot`, `readOnlyRootFilesystem`, drop `ALL`
-      capabilities, `automountServiceAccountToken: false`; Chroma needs `runAsUser`/`fsGroup`
+- [x] Rolling update `maxSurge: 1`, `maxUnavailable: 0`, `terminationGracePeriodSeconds: 45`,
+      `preStop` sleep 10 s
+- [x] Security context on every pod: `runAsNonRoot`, `readOnlyRootFilesystem`, drop `ALL`
+      capabilities, seccomp `RuntimeDefault`, `automountServiceAccountToken: false`; Chroma
+      runs as 1000 and Redis as 999, with `fsGroup` on their volumes
 - [ ] NetworkPolicy: deny by default, allow DNS, then only ui←ingress, api←ingress/ui,
       chroma←api/indexer, redis←api, api→Ollama host. **Test: ui cannot reach chroma**
 - [ ] Evidence: `kubectl set image` → `rollout status` → `rollout undo`;
