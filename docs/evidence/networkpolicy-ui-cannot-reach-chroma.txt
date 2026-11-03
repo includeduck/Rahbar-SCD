@@ -1,0 +1,27 @@
+# NetworkPolicy: deny by default; the ui cannot reach chroma, the api can (section 4.7)
+# minikube v1.39.0, CNI Calico, 2026-11-03 18:09 UTC
+
+$ kubectl -n rahbar get networkpolicy
+NAME                       POD-SELECTOR                              AGE
+allow-dns-egress           <none>                                    42s
+allow-ollama-host-egress   app.kubernetes.io/name in (api,indexer)   42s
+api                        app.kubernetes.io/name=api                42s
+chroma                     app.kubernetes.io/name=chroma             42s
+default-deny-all           <none>                                    42s
+indexer                    app.kubernetes.io/name=indexer            42s
+redis                      app.kubernetes.io/name=redis              42s
+ui                         app.kubernetes.io/name=ui                 42s
+
+$ kubectl -n rahbar exec ui-75858d4db4-xqhpr -- curl -sS -m 5 http://chroma:8000/api/v2/heartbeat
+curl: (28) Connection timed out after 5000 milliseconds
+command terminated with exit code 28
+(exit code 28)
+
+$ kubectl -n rahbar exec ui-75858d4db4-xqhpr -- curl -sS -m 5 http://redis:6379
+curl: (28) Connection timed out after 5000 milliseconds
+command terminated with exit code 28
+(exit code 28)
+
+$ kubectl -n rahbar exec api-dc497945-n7nd7 -- python -c "import httpx; print(httpx.get('http://chroma:8000/api/v2/heartbeat', timeout=5).text)"
+{"nanosecond heartbeat":1793729370688147999}
+(exit code 0)

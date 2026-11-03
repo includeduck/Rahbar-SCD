@@ -1,0 +1,23 @@
+# Service endpoints: the api Service finds its pods by label (section 4.6). 2026-11-03 18:12 UTC
+
+$ kubectl -n rahbar get deploy api
+NAME   READY   UP-TO-DATE   AVAILABLE   AGE
+api    3/3     3            3           18m
+
+$ kubectl -n rahbar get pods -l app.kubernetes.io/name=api -o wide
+NAME                   READY   STATUS    RESTARTS   AGE   IP              NODE       NOMINATED NODE 
+api-757cfbcdbd-9xv6q   1/1     Running   0          59s   10.244.120.96   minikube   <none>         
+api-757cfbcdbd-grgzx   1/1     Running   0          64s   10.244.120.95   minikube   <none>         
+api-757cfbcdbd-t7pws   1/1     Running   0          68s   10.244.120.94   minikube   <none>         
+
+$ kubectl -n rahbar get endpoints api
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME   ENDPOINTS                                                  AGE
+api    10.244.120.94:8000,10.244.120.95:8000,10.244.120.96:8000   18m
+
+$ kubectl -n rahbar get endpointslices -l kubernetes.io/service-name=api -o wide
+NAME        ADDRESSTYPE   PORTS   ENDPOINTS                                   AGE
+api-xmxmj   IPv4          8000    10.244.120.94,10.244.120.95,10.244.120.96   18m
+
+# The Service manifest (k8s/base/services.yaml) was not touched: its selector
+# app.kubernetes.io/name=api matches the three pods.

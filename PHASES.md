@@ -8,8 +8,8 @@ know a phase is done. The reasoning behind each decision is in
 [`docs/DEVELOPMENT-PLAN.md`](docs/DEVELOPMENT-PLAN.md); the handout section for each item is
 given in brackets, e.g. (§4.3).
 
-**Status as of Tue 3 Nov (evening):** phases 0–2 are done; phase 3 is done except ADR 0001,
-and about half of phase 4 came with it. Next: the rest of phase 4, and phase 6 (Zain).
+**Status as of Tue 3 Nov (evening):** phases 0–4 are done, except ADR 0001 (Wasay, in his
+own words). Next: phase 5 (CI, Wasay) and phase 6 (golden set, Zain).
 
 ---
 
@@ -35,7 +35,7 @@ able to explain every part in a viva.
 | 1 | [Corpus](#phase-1-corpus) | Wasay | Mon 2 – Tue 3 | ✅ Done (one follow-up) |
 | 2 | [Container images](#phase-2-container-images) | Wasay | Tue 3 | ✅ Done |
 | 3 | [Kubernetes around the stubs](#phase-3-kubernetes-around-the-stubs) | Wasay | Tue 3 – Wed 4 | ✅ Done (ADR 0001 left) |
-| 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay (+ Zain for `/readyz`) | Wed 4 | ⏳ About half done |
+| 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay | Tue 3 | ✅ Done |
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Wed 4 | ⬜ |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ⏳ Next |
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ⬜ |
@@ -180,33 +180,41 @@ startup; −5 anything in the `default` namespace.
 
 ## Phase 4: Hardening: probes, pin, security, scaling
 
-**Owner:** Wasay; Zain writes `/readyz` and the pin check · **When:** Wed 4 · (§4.3–§4.7)
+**Owner:** Wasay · **When:** Tue 3 · (§4.3–§4.7) · **Status:** ✅ Done (3 Nov)
 
-Done early, in phase 3: probes, requests and limits, the rolling-update settings and the
-security contexts. The checker's Kubernetes section now fails only on the HPA and the
-NetworkPolicy.
+The checker's Kubernetes section passes completely. Phase 7 must keep `/readyz` and the pin
+check working when the indexer switches to the blue/green collection pointer (plan, D1).
 
 - [x] api probes exactly as §4.3: startup and liveness on `/healthz`, readiness on `/readyz`
-- [ ] **`/readyz`** (code): 200 only if Chroma is reachable, the collection is non-empty, Redis
-      answers, and the embedding model matches; otherwise 503 naming what failed
-- [ ] **Embedding-pin guardrail** (code): the API compares the collection's `embed_model`
-      with its `EMBED_MODEL`; on mismatch it stays not-ready and logs both values.
-      Demo: the dummy index says `dummy-768`, so a real model name gives `0/1 READY`
+- [x] **`/readyz`** (`api/app/services/readiness.py`): 200 only if Chroma answers, the
+      collection exists and is non-empty, its `embed_model` matches, and Redis answers;
+      otherwise 503 with `failed` naming the first failure and every check listed. Chroma is
+      called over REST with a 2 s timeout, because `chromadb.HttpClient` connects in its
+      constructor and has no timeout. Logs only when readiness changes. 9 unit tests
+- [x] **Embedding-pin guardrail**: checked at startup (in a background thread, so liveness
+      is not delayed) and on every readiness probe; on mismatch the pod stays not-ready and
+      logs both model names. Demo done: `docs/evidence/embedding-pin-guardrail.txt`
 - [x] Requests and limits on **every** container, including the Job and its initContainer
       (initial values; phase 11 sets them from `kubectl top`)
-- [ ] HPA on api: `autoscaling/v2`, min 3, max 8, CPU; shows a real %, not `<unknown>`
+- [x] HPA on api: `autoscaling/v2`, min 3, max 8, CPU 70 %; reads `3%/70%`. Right after pods
+      are replaced it shows `<unknown>` for about a minute until metrics-server has samples
 - [x] Rolling update `maxSurge: 1`, `maxUnavailable: 0`, `terminationGracePeriodSeconds: 45`,
       `preStop` sleep 10 s
 - [x] Security context on every pod: `runAsNonRoot`, `readOnlyRootFilesystem`, drop `ALL`
       capabilities, seccomp `RuntimeDefault`, `automountServiceAccountToken: false`; Chroma
       runs as 1000 and Redis as 999, with `fsGroup` on their volumes
-- [ ] NetworkPolicy: deny by default, allow DNS, then only ui←ingress, api←ingress/ui,
-      chroma←api/indexer, redis←api, api→Ollama host. **Test: ui cannot reach chroma**
-- [ ] Evidence: `kubectl set image` → `rollout status` → `rollout undo`;
-      `kubectl get endpoints` with 3 IPs; `kubectl get hpa`
+- [x] NetworkPolicy (`k8s/base/networkpolicy.yaml`): deny by default, allow DNS, then only
+      ui←ingress, api←ingress/ui, chroma←api/indexer, redis←api. The dev overlay adds
+      api/indexer → Ollama on the laptop (`192.168.65.254` with Docker Desktop). Tested:
+      **the ui times out reaching chroma and redis; the api reaches chroma**
+- [x] Evidence in `docs/evidence/`: rollout to `rahbar-ui:v2` and `rollout undo` verified
+      through the Ingress; `kubectl get endpoints` with 3 IPs; `kubectl get hpa`; the pin
+      demo; the NetworkPolicy test; deleting an api pod during 150 requests (**150 × 200**)
 
 **Done when:** all pods Ready under the policies, the pin demo shows `0/1 READY` with the log
-line, and the evidence files are in `docs/evidence/`.
+line, and the evidence files are in `docs/evidence/`. ✅
+
+Still for phase 7: the indexer's egress to `nu.edu.pk` for the corpus fetch.
 
 At stake: −8 embedding model able to disagree silently; −6 a container without requests or an
 HPA reading `<unknown>`.
