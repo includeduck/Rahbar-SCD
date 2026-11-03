@@ -8,8 +8,9 @@ know a phase is done. The reasoning behind each decision is in
 [`docs/DEVELOPMENT-PLAN.md`](docs/DEVELOPMENT-PLAN.md); the handout section for each item is
 given in brackets, e.g. (§4.3).
 
-**Status as of Tue 3 Nov (evening):** phases 0–4 are done, except ADR 0001 (Wasay, in his
-own words). Next: phase 5 (CI, Wasay) and phase 6 (golden set, Zain).
+**Status as of Tue 3 Nov (evening):** phases 0–5 are done, except ADR 0001 (Wasay, in his
+own words) and requiring the CI checks in the ruleset. Next: phase 6 (golden set, Zain) and
+phase 7 (indexer).
 
 ---
 
@@ -36,7 +37,7 @@ able to explain every part in a viva.
 | 2 | [Container images](#phase-2-container-images) | Wasay | Tue 3 | ✅ Done |
 | 3 | [Kubernetes around the stubs](#phase-3-kubernetes-around-the-stubs) | Wasay | Tue 3 – Wed 4 | ✅ Done (ADR 0001 left) |
 | 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay | Tue 3 | ✅ Done |
-| 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Wed 4 | ⬜ |
+| 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Tue 3 | ✅ Done (ruleset step left) |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ⏳ Next |
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ⬜ |
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ⬜ |
@@ -221,17 +222,23 @@ HPA reading `<unknown>`.
 
 ## Phase 5: CI pipeline (`ci.yml`)
 
-**Owner:** Wasay · **When:** Wed 4 · (§6)
+**Owner:** Wasay · **When:** Tue 3 · (§6) · **Status:** ✅ Done, except the ruleset step
 
-Runs on pull requests to `main` and pushes to `dev`.
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on pull requests to `main` and
+pushes to `dev`. First run green:
+[run #1](https://github.com/includeduck/Rahbar-SCD/actions/runs/41693995772), about 1.5 min.
 
-- [ ] `lint`: ruff + mypy
-- [ ] `test`: pytest with **≥ 60 % coverage** on the api package (add `pytest-cov`), stubs only
-- [ ] `manifests`: `kustomize build k8s/overlays/prod | kubeconform -strict`
-- [ ] `build`: all three images, **no push**
-- [ ] `scan`: Trivy, fail on fixable HIGH/CRITICAL (already 0 locally)
-- [ ] Least-privilege `permissions:` block; actions pinned to versions
-- [ ] After the first run: add these checks to the `main` ruleset and screenshot it
+- [x] `lint`: ruff + mypy (api and indexer)
+- [x] `test`: pytest with **≥ 60 % coverage** on the api package (`pytest-cov`; 86 % on the
+      first run), plus the indexer tests; stubs only
+- [x] `manifests`: every overlay rendered with `kubectl kustomize` and checked with
+      `kubeconform -strict` (28 + 27 resources valid)
+- [x] `build`: all three images, **no push**
+- [x] `scan`: Trivy 0.58.1, HIGH/CRITICAL with a fix available → fail (0 findings)
+- [x] `permissions: contents: read`; actions pinned (`checkout@v5`, `setup-python@v6`);
+      the other tools are pinned by version, not by action
+- [ ] **Wasay:** in the `main` ruleset, require `lint`, `test`, `manifests`, `build`, `scan`
+      (`e2e-eval` once phase 10 adds it), then screenshot it for `docs/evidence/`
 
 **Done when:** CI is green on `dev` and the ruleset requires the checks.
 
