@@ -107,14 +107,20 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      # The runner image already has kind in /usr/local/bin, owned by root, so it cannot be
+      # replaced there. Install the pinned versions into a directory this job owns and put
+      # it first on the PATH for the following steps.
       - name: Install kind and kustomize
         run: |
-          curl -sSfLo /usr/local/bin/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
-          chmod +x /usr/local/bin/kind
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          curl -sSfLo "$bin/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x "$bin/kind"
           curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
-            | tar -xz -C /usr/local/bin kustomize
-          kind version
-          kustomize version
+            | tar -xz -C "$bin" kustomize
+          echo "$bin" >> "$GITHUB_PATH"
+          "$bin/kind" version
+          "$bin/kustomize" version
       # Authenticated pulls: the published images by SHA, plus Chroma and Redis, without
       # the anonymous Docker Hub rate limit that shared runner IPs hit.
       - name: Log in to Docker Hub
