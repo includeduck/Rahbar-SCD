@@ -15,3 +15,4 @@ We use AI assistance in this assignment and disclose it here, entry by entry, as
 | Claude Code (Claude Opus 5.5) | `.github/workflows/ci.yml` (lint, test with coverage gate, manifests, build, scan) | Pending our review |
 | Claude Code (Claude Opus 5.5) | `.github/workflows/cd.yml` and `scripts/cd/deploy-kind.sh` (kind deploy and Ingress smoke test), tested on a local kind cluster | Pending our review |
 | Claude Code (Claude Opus 5.5) | OCR of the Aug 2023 rules and the clause-by-clause comparison with the 2026 handbook that found the four changed rules in `docs/CORPUS.md` | Pending our review |
+| Antigravity | Phase 6 (`eval/golden.yaml`, `eval/run_eval.py`, tests) and Phase 7 (`indexer/pipeline/{extract,clean,chunk,embed,store}.py`, tests), `docs/PIPELINE.md` | Verified matching rule logic, tested chunking overlap, ensured all 54 tests pass and zero starter TODOs in implemented modules |
