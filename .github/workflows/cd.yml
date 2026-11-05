@@ -1,0 +1,132 @@
+# CD (section 6): every push to main. test -> build-push -> deploy, each gated by needs:,
+# so an image built from code that failed its tests is never published or deployed.
+# Images are tagged with the commit SHA only, never :latest: "what is running?" has a
+# one-word answer you can paste into `git show`.
+#
+# Repository settings it needs (Settings -> Secrets and variables -> Actions):
+#   variable DOCKERHUB_USERNAME   the Docker Hub account (not secret; it is in every image name)
+#   secret   DOCKERHUB_TOKEN      a Docker Hub access token with Read & Write scope, never the password
+name: cd
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a deploy halfway; queue the next one instead.
+concurrency:
+  group: cd-main
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  TRIVY_IMAGE: aquasec/trivy:0.58.1
+  KIND_VERSION: v0.33.0
+  KUSTOMIZE_VERSION: v5.8.3
+  REGISTRY: docker.io/${{ vars.DOCKERHUB_USERNAME }}
+  TAG: ${{ github.sha }}
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      - name: ruff
+        run: ruff check api indexer eval corpus
+      - name: pytest (api, coverage gate 60 %)
+        working-directory: api
+        run: pytest -q --cov=app --cov-report=term --cov-fail-under=60
+      - name: pytest (indexer)
+        working-directory: indexer
+        run: pytest -q
+
+  build-push:
+    needs: test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check the registry settings
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::Set the DOCKERHUB_USERNAME variable and the DOCKERHUB_TOKEN secret (see the top of cd.yml)"
+            exit 1
+          fi
+      - name: Build the images
+        run: |
+          docker build -t "$REGISTRY/rahbar-api:$TAG" api
+          docker build -t "$REGISTRY/rahbar-ui:$TAG" ui
+          docker build -t "$REGISTRY/rahbar-indexer:$TAG" -f indexer/Dockerfile .
+      # The same gate as ci.yml's scan job, on the exact bytes about to be published.
+      - name: Trivy (fixable HIGH/CRITICAL fails the publish)
+        run: |
+          status=0
+          for name in rahbar-api rahbar-ui rahbar-indexer; do
+            echo "::group::${name}"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${TRIVY_IMAGE}" \
+              image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+              --exit-code 1 --no-progress "$REGISTRY/${name}:$TAG" || status=1
+            echo "::endgroup::"
+          done
+          exit "${status}"
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "$DOCKERHUB_TOKEN" | docker login docker.io -u "$DOCKERHUB_USERNAME" --password-stdin
+      - name: Push, tagged by commit SHA
+        run: |
+          for name in rahbar-api rahbar-ui rahbar-indexer; do
+            docker push "$REGISTRY/${name}:$TAG"
+          done
+      - name: Summary
+        run: |
+          {
+            echo "### Published, tag \`$TAG\`"
+            for name in rahbar-api rahbar-ui rahbar-indexer; do
+              echo "- \`$REGISTRY/${name}:$TAG\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install kind and kustomize
+        run: |
+          curl -sSfLo /usr/local/bin/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x /usr/local/bin/kind
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin kustomize
+          kind version
+          kustomize version
+      # Authenticated pulls: the published images by SHA, plus Chroma and Redis, without
+      # the anonymous Docker Hub rate limit that shared runner IPs hit.
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: echo "$DOCKERHUB_TOKEN" | docker login docker.io -u "$DOCKERHUB_USERNAME" --password-stdin
+      - name: Pull the published images
+        run: |
+          for name in rahbar-api rahbar-ui rahbar-indexer; do
+            docker pull -q "$REGISTRY/${name}:$TAG"
+          done
+      # Ephemeral cluster, apply, kubectl rollout status, smoke test through the Ingress.
+      - name: Deploy to kind and smoke-test
+        run: bash scripts/cd/deploy-kind.sh "$REGISTRY" "$TAG"
