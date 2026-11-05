@@ -1,0 +1,100 @@
+# The indexer: the only writer to Chroma. It runs once and exits (section 4.2, ADR 0001).
+# Re-index without a redeploy:
+#   kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: indexer
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+spec:
+  # Retries cover a Chroma that is not ready yet when the Job starts.
+  backoffLimit: 4
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: indexer
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: indexer
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      # On a fresh cluster Chroma can take minutes (image pull, PVC binding). Wait for its
+      # heartbeat here instead of burning the Job's backoffLimit on connection errors.
+      initContainers:
+        - name: wait-for-chroma
+          image: rahbar-indexer
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -c
+            - |
+              import os, time, httpx
+              url = f"http://{os.environ['CHROMA_HOST']}:{os.environ['CHROMA_PORT']}/api/v2/heartbeat"
+              for attempt in range(120):
+                  try:
+                      httpx.get(url, timeout=3).raise_for_status()
+                      print("chroma is up", flush=True)
+                      break
+                  except Exception as exc:
+                      print(f"waiting for chroma ({attempt}): {exc}", flush=True)
+                      time.sleep(5)
+              else:
+                  raise SystemExit("chroma did not come up in 10 minutes")
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      containers:
+        - name: indexer
+          image: rahbar-indexer
+          imagePullPolicy: IfNotPresent
+          # Phase 3: three dummy chunks, no model. Phase 7 drops --dummy here and in the
+          # CronJob, which must keep the same image and arguments.
+          args: ["python", "-m", "pipeline.run", "--dummy"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          # Initial values. Embedding and OCR need far more memory than serving does;
+          # phase 11 sets these from `kubectl top pods` during a real run (exit 137 = too low).
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: tmp
+          emptyDir: {}

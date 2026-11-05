@@ -201,7 +201,7 @@ GitHub runners have no Ollama on the host. Plan:
 | # | Property | Candidate document(s) | Verify by |
 | --- | --- | --- | --- |
 | 1 | ≥ 6 docs, ≥ 40 pages | **9 documents, 279 PDF pages + 2 HTML pages**: Handbook 2026 (58 p), Student Handbook 2026 (64), Annual Reports 2019-20 (33) and 2023-24 (85), Rules Aug 2023 (26), ORIC policy (8), Prospectus rules (5), Fee and Grading pages | ✅ fetched and checked 2 Nov |
-| 2 | Two versions of one policy | **Academic Rules Aug 2023 (superseded)** vs **Academic Rules Handbook Jun 2026** | ✅ Aug 2023 now downloads, **but 24 of 26 pages have no text layer** (Corel export). The old side of the pair needs OCR; check OCR quality as soon as the indexer image has tesseract (Thu at the latest). Fallbacks if OCR is unusable: Annual Reports 2019-20 vs 2023-24 (both have text); EE PLOs pre-2024 vs 2024+ (IQAE, Google Drive) |
+| 2 | Two versions of one policy | **Academic Rules Aug 2023 (superseded)** vs **Academic Rules Handbook Jun 2026** | ✅ Aug 2023 now downloads, **but 24 of 26 pages have no text layer** (Corel export). ✅ OCR tested 3 Nov in the indexer image: clean text, clause numbers intact. Four genuine rule changes found (see `docs/CORPUS.md`). Fallbacks if OCR is unusable: Annual Reports 2019-20 vs 2023-24 (both have text); EE PLOs pre-2024 vs 2024+ (IQAE, Google Drive) |
 | 2/7 | Same rules, different clause numbers | Prospectus 2026: Academic Rules and Regulations (attendance = clause 1 vs 1.21) | ✅ both say 100 % attendance |
 | 3 | Scanned, image-only PDF | Faculty Entrepreneurship and Technical Start-ups Policy (ORIC `27.pdf`) | ✅ 8 pages, no fonts, one image per page (pypdf). Still run `pdffonts` in WSL and paste the empty output into `CORPUS.md`. The Aug 2023 rules are a second OCR case |
 | 4 | Table with real information | Fee Structure page (22 table rows: Rs. 12,000 per credit hour, other fees) and Grading page (38 rows: grade points); Annual Report tables | ✅ tables are in the static HTML, not loaded by JavaScript |
@@ -248,8 +248,9 @@ Namespace **`rahbar`** for everything (−5 if anything lands in `default`).
 
 `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `allowPrivilegeEscalation: false`,
 `capabilities.drop: [ALL]`, `seccompProfile: RuntimeDefault`; `emptyDir` at `/tmp` wherever a
-process needs scratch space (ui, api, indexer for OCR temp files, chroma). Chroma's image may
-expect root: set `runAsUser`/`fsGroup` and test early (Tuesday). If something genuinely cannot
+process needs scratch space (ui, api, indexer for OCR temp files, chroma). **Confirmed 3 Nov:
+`chromadb/chroma:1.0.12` runs as root by default**, so its pod must set `runAsUser`/`fsGroup`
+(e.g. 1000) and be tested on minikube with the PVC. If something genuinely cannot
 run read-only, document the exception rather than silently dropping the setting.
 
 ### NetworkPolicy allow-list (after default-deny)
@@ -410,8 +411,14 @@ documents and the exact `source`/`section` strings our indexer emits:
 | ordinary | What is the refund policy if I drop a course in week 2? |
 | ordinary | How many times can a course be repeated? |
 | ordinary | What happens after repeated academic warnings? |
-| version | What was the academic-warning threshold under the 2023 rules? |
-| version | Has the rule on repeating courses changed since 2023? |
+| version | If I fail a course, when do I have to retake it? (2026 5.8: next semester, cannot skip; 2023 said "whenever offered again") |
+| version | Can I register for more than five courses in a semester? (2026 4.3: only a final-year student, one extra; 2023 allowed more if not ahead of batch) |
+| version | Under the 2023 rules, could a student take extra courses? (must retrieve the superseded 2023 clause) |
+
+Note (3 Nov, after OCR of the 2023 rules): attendance 1.21 and the CGPA 2.00 threshold did
+**not** change between versions, so they are ordinary/exact questions, not version questions.
+Two further genuine changes: position-medal credit-hour rule (2026 7.11, new) and FYP
+credits not transferable (2026 3.14, new). See `docs/CORPUS.md`.
 | exact | What does clause 1.21 of the academic rules require? |
 | exact | What is the tuition fee per credit hour for BS programmes? (Fee page: Rs. 12,000) |
 | abstain | How do I apply for a hostel room, and what is the hostel fee? |

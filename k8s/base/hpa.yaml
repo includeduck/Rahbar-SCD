@@ -1,0 +1,26 @@
+# Scales the api between 3 and 8 pods on CPU (section 4.1). Utilisation is usage divided by
+# requests.cpu, so the api Deployment must set requests (it does), and metrics-server must
+# be running (make cluster enables it). Otherwise this reads <unknown>/70% forever.
+# CPU is a weak signal for a service that mostly waits on the LLM: see ENGINEERING-NOTES Q3.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: rahbar
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 3
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

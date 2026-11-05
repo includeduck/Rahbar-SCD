@@ -1,0 +1,31 @@
+# HorizontalPodAutoscaler on the api: autoscaling/v2, 3 to 8 replicas, CPU 70 %. 2026-11-03 18:12 UTC
+# A real percentage, not <unknown>: requests.cpu is set and metrics-server is enabled.
+# (Right after pods are replaced it reads <unknown> for about a minute until metrics-server
+#  has samples from the new pods; that is expected and clears on its own.)
+
+$ kubectl -n rahbar get hpa
+NAME   REFERENCE        TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+api    Deployment/api   cpu: 3%/70%   3         8         3          4m5s
+
+$ kubectl -n rahbar describe hpa api
+Metrics:                                               ( current / target )
+  resource cpu on pods  (as a percentage of request):  3% (3m) / 70%
+Min replicas:                                          3
+Max replicas:                                          8
+Deployment pods:                                       3 current / 3 desired
+Conditions:
+  Type            Status  Reason               Message
+  ----            ------  ------               -------
+  AbleToScale     True    ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+  ScalingActive   True    ValidMetricFound     the HPA was able to successfully calculate a replica count from cpu resource utilization (percentage of request)
+  ScalingLimited  False   DesiredWithinRange   the desired count is within the acceptable range
+
+$ kubectl top pods -n rahbar
+NAME                   CPU(cores)   MEMORY(bytes)   
+api-757cfbcdbd-9xv6q   3m           47Mi            
+api-757cfbcdbd-grgzx   3m           47Mi            
+api-757cfbcdbd-t7pws   3m           47Mi            
+chroma-0               2m           16Mi            
+redis-67f8bbd5-hlrc7   7m           3Mi             
+ui-75858d4db4-pqlfc    1m           2Mi             
+ui-75858d4db4-r2btw    2m           2Mi             

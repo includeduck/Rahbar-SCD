@@ -1,0 +1,121 @@
+# CI (section 6): every pull request to main and every push to dev.
+# Job names are the required status checks in the main ruleset: keep them stable.
+# Nothing here publishes anything; cd.yml does that, after its own tests pass.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [dev]
+
+# Least privilege: read the code, nothing else.
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR supersedes the run in progress.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  KUBECONFORM_VERSION: v0.6.7
+  # The same scanner version we run locally, so local and CI results agree.
+  TRIVY_IMAGE: aquasec/trivy:0.58.1
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      - name: ruff
+        run: ruff check api indexer eval corpus
+      - name: mypy (api)
+        working-directory: api
+        run: mypy app
+      - name: mypy (indexer)
+        working-directory: indexer
+        run: mypy pipeline
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            api/requirements*.txt
+            indexer/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r api/requirements-dev.txt -r indexer/requirements-dev.txt
+      # Stub retriever and stub provider only: no network, no model, no cluster.
+      - name: pytest (api, coverage gate 60 %)
+        working-directory: api
+        run: pytest -q --cov=app --cov-report=term --cov-fail-under=60
+      - name: pytest (indexer)
+        working-directory: indexer
+        run: pytest -q
+
+  manifests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install kubeconform
+        run: |
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+      # A broken manifest fails here in seconds instead of on the cluster.
+      - name: Validate every overlay
+        run: |
+          for overlay in k8s/overlays/*/; do
+            echo "::group::${overlay}"
+            kubectl kustomize "${overlay}" | kubeconform -strict -summary -
+            echo "::endgroup::"
+          done
+
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      # Built, never pushed: a pull request must not publish anything.
+      - name: Build the api image
+        run: docker build -t rahbar-api:ci api
+      - name: Build the ui image
+        run: docker build -t rahbar-ui:ci ui
+      - name: Build the indexer image (repository root context)
+        run: docker build -t rahbar-indexer:ci -f indexer/Dockerfile .
+
+  scan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the images to scan
+        run: |
+          docker build -t rahbar-api:ci api
+          docker build -t rahbar-ui:ci ui
+          docker build -t rahbar-indexer:ci -f indexer/Dockerfile .
+      # Fail on HIGH or CRITICAL findings that have a fix available (section 6).
+      - name: Trivy
+        run: |
+          status=0
+          for image in rahbar-api:ci rahbar-ui:ci rahbar-indexer:ci; do
+            echo "::group::${image}"
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${TRIVY_IMAGE}" \
+              image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+              --exit-code 1 --no-progress "${image}" || status=1
+            echo "::endgroup::"
+          done
+          exit "${status}"

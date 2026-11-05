@@ -1,0 +1,65 @@
+# Four ClusterIP Services (section 4.1). Nothing here is NodePort or LoadBalancer: users
+# come in through the Ingress, and Chroma and Redis are reachable only inside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: ui
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ui
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chroma
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: chroma
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: chroma
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: redis
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

@@ -1,0 +1,41 @@
+# The one place both the api and the indexer read their settings from (section 4.1).
+# EMBED_MODEL is the embedding pin (section 4.4): both workloads read this same key.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rahbar-config
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/part-of: rahbar
+data:
+  # Which implementations the api loads. Phase 3 runs on the starter kit's stubs; phase 8
+  # switches these to chroma and ollama-host.
+  RETRIEVER: "stub"
+  LLM_PROVIDER: "stub"
+  LLM_MODEL: "llama3.2:3b"
+
+  # The pin. The dummy index records "dummy-768"; phase 7 changes this to nomic-embed-text
+  # and re-indexes (changing it first, without re-indexing, is the section 4.4 demo).
+  EMBED_MODEL: "dummy-768"
+
+  # Vector store and cache addresses: the ClusterIP Services in this namespace.
+  CHROMA_HOST: "chroma"
+  CHROMA_PORT: "8000"
+  CHROMA_COLLECTION: "rahbar"
+  REDIS_URL: "redis://redis:6379/0"
+  # Ollama on the laptop (ollama-host mode), reached from inside minikube.
+  OLLAMA_URL: "http://host.minikube.internal:11434"
+
+  # Retrieval and generation. Placeholders until phase 11 measures them.
+  TOP_K: "5"
+  RELEVANCE_FLOOR: "0.50"
+  CACHE_THRESHOLD: "0.95"
+  # Facts and JSON need low randomness; 0 still cannot fix knowledge the corpus lacks.
+  TEMPERATURE: "0.1"
+
+  # Indexer chunking, in tokens. Placeholders until phase 11 measures three settings.
+  CHUNK_SIZE: "400"
+  CHUNK_OVERLAP: "50"
+  CORPUS_DIR: "/corpus"
+
+  LOG_LEVEL: "INFO"

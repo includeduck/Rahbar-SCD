@@ -1,0 +1,12 @@
+# Deleting an api pod while questions flow through the Ingress (section 1.3: "nothing breaks")
+# 2026-11-03 · 150 POST /api/ask requests, ~0.1 s apart · pod api-757cfbcdbd-9xv6q deleted at 18:12:58 UTC
+# preStop sleeps 10 s while readiness removes the pod from the Service; maxUnavailable: 0.
+
+HTTP status codes over the whole run (count, code):
+    150 200
+
+$ kubectl -n rahbar get pods -l app.kubernetes.io/name=api
+NAME                   READY   STATUS    RESTARTS   AGE
+api-757cfbcdbd-grgzx   1/1     Running   0          2m29s
+api-757cfbcdbd-t7pws   1/1     Running   0          2m33s
+api-757cfbcdbd-zkdmr   1/1     Running   0          27s

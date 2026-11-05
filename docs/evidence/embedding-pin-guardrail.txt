@@ -1,0 +1,58 @@
+# Embedding-model pin (section 4.4): EMBED_MODEL changed on the api only, no re-index
+# The index was built by the dummy indexer and records embed_model=dummy-768. 2026-11-03 18:09 UTC
+
+$ kubectl -n rahbar patch configmap rahbar-config --type merge -p '{"data":{"EMBED_MODEL":"nomic-embed-text"}}'
+configmap/rahbar-config patched
+
+$ kubectl -n rahbar rollout restart deploy/api
+deployment.apps/api restarted
+
+$ kubectl -n rahbar get pods -l app.kubernetes.io/name=api
+NAME                 READY   STATUS    RESTARTS   AGE
+api-97c6ff45-svwsx   0/1     Running   0          45s
+api-dc497945-n7nd7   1/1     Running   0          113s
+api-dc497945-qx6r7   1/1     Running   0          104s
+api-dc497945-w5rwc   1/1     Running   0          109s
+
+$ kubectl -n rahbar describe pod api-97c6ff45-svwsx   (Events)
+Events:
+  Type     Reason     Age               From               Message
+  Normal   Started    44s               kubelet            spec.containers{api}: Container started
+  Warning  Unhealthy  43s               kubelet            spec.containers{api}: Startup probe failed: Get "http://10.244.120.93:8000/healthz": dial tcp 10.244.120.93:8000: connect: connection refused
+  Warning  Unhealthy  0s (x6 over 41s)  kubelet            spec.containers{api}: Readiness probe failed: HTTP probe failed with statuscode: 503
+
+$ kubectl -n rahbar logs api-97c6ff45-svwsx | grep -E 'mismatch|not ready'
+{"ts": "2026-11-03T18:09:47Z", "level": "ERROR", "logger": "rahbar.api", "msg": "embedding model mismatch: refusing to become ready", "request_id": "-", "conflict": "embedding model mismatch: the index was built with 'dummy-768' (dimension 768), but this api has EMBED_MODEL='nomic-embed-text'"}
+
+$ kubectl -n rahbar rollout status deploy/api --timeout=10s
+Waiting for deployment "api" rollout to finish: 1 out of 3 new replicas have been updated...
+error: timed out waiting for the condition
+
+# The rollout is stuck on purpose: maxUnavailable: 0 keeps the three old, correctly pinned
+# pods serving while the new pod refuses to become ready.
+
+$ kubectl -n rahbar get endpointslices -l kubernetes.io/service-name=api
+NAME        ADDRESSTYPE   PORTS   ENDPOINTS                                               AGE
+api-xmxmj   IPv4          8000    10.244.120.90,10.244.120.91,10.244.120.92 + 1 more...   17m
+
+# EndpointSlices list not-ready pods too; the ready flag shows the new pod gets no traffic:
+$ kubectl -n rahbar get endpointslices -l kubernetes.io/service-name=api -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}{"  ready="}{.conditions.ready}{"\n"}{end}'
+api-dc497945-n7nd7  ready=true
+api-dc497945-w5rwc  ready=true
+api-dc497945-qx6r7  ready=true
+api-97c6ff45-svwsx  ready=false
+
+# Revert: put the pin back and restart; the rollout completes.
+$ kubectl -n rahbar patch configmap rahbar-config --type merge -p '{"data":{"EMBED_MODEL":"dummy-768"}}'
+configmap/rahbar-config patched
+$ kubectl -n rahbar rollout restart deploy/api && kubectl -n rahbar rollout status deploy/api
+deployment.apps/api restarted
+deployment "api" successfully rolled out
+$ kubectl -n rahbar get pods -l app.kubernetes.io/name=api
+NAME                   READY   STATUS        RESTARTS   AGE
+api-757cfbcdbd-9xv6q   1/1     Running       0          4s
+api-757cfbcdbd-grgzx   1/1     Running       0          9s
+api-757cfbcdbd-t7pws   1/1     Running       0          13s
+api-dc497945-n7nd7     1/1     Terminating   0          2m29s
+api-dc497945-qx6r7     1/1     Terminating   0          2m20s
+api-dc497945-w5rwc     1/1     Terminating   0          2m25s

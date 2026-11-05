@@ -1,0 +1,100 @@
+# Weekly re-index: the same image and arguments as the indexer Job (section 4.1).
+# Its template is also what `make index` and manual re-indexing create Jobs from.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reindex
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+spec:
+  schedule: "0 3 * * 0"
+  timeZone: "Asia/Karachi"
+  # Never two indexers at once: they would race to build the same collection.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 4
+      activeDeadlineSeconds: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: indexer
+            app.kubernetes.io/part-of: rahbar
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: indexer
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: wait-for-chroma
+              image: rahbar-indexer
+              imagePullPolicy: IfNotPresent
+              command:
+                - python
+                - -c
+                - |
+                  import os, time, httpx
+                  url = f"http://{os.environ['CHROMA_HOST']}:{os.environ['CHROMA_PORT']}/api/v2/heartbeat"
+                  for attempt in range(120):
+                      try:
+                          httpx.get(url, timeout=3).raise_for_status()
+                          print("chroma is up", flush=True)
+                          break
+                      except Exception as exc:
+                          print(f"waiting for chroma ({attempt}): {exc}", flush=True)
+                          time.sleep(5)
+                  else:
+                      raise SystemExit("chroma did not come up in 10 minutes")
+              envFrom:
+                - configMapRef:
+                    name: rahbar-config
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+          containers:
+            - name: indexer
+              image: rahbar-indexer
+              imagePullPolicy: IfNotPresent
+              args: ["python", "-m", "pipeline.run", "--dummy"]
+              envFrom:
+                - configMapRef:
+                    name: rahbar-config
+              resources:
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+                limits:
+                  cpu: "2"
+                  memory: 2Gi
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+          volumes:
+            - name: tmp
+              emptyDir: {}

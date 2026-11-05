@@ -1,0 +1,44 @@
+# Rolling update and rollback through the Ingress (section 4.6). 2026-11-03 18:11 UTC
+# rahbar-ui:v2 differs from :dev only in the page title. maxSurge 1, maxUnavailable 0.
+
+$ curl -s -H "Host: rahbar.local" <ingress>/ | grep -o "<title>.*</title>"
+<title>RAHBAR</title>
+
+$ kubectl -n rahbar set image deploy/ui ui=rahbar-ui:v2
+deployment.apps/ui image updated
+$ kubectl -n rahbar rollout status deploy/ui
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "ui" rollout to finish: 1 old replicas are pending termination...
+deployment "ui" successfully rolled out
+
+$ curl ... (after the update)
+<title>RAHBAR (v2)</title>
+
+$ kubectl -n rahbar rollout history deploy/ui
+deployment.apps/ui 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+
+$ kubectl -n rahbar rollout undo deploy/ui
+Warning: resource deployments/ui was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+deployment.apps/ui rolled back
+$ kubectl -n rahbar rollout status deploy/ui
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "ui" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "ui" rollout to finish: 1 old replicas are pending termination...
+deployment "ui" successfully rolled out
+
+$ curl ... (after the undo: the previous version serves again)
+<title>RAHBAR</title>
+
+$ kubectl -n rahbar get deploy ui -o jsonpath="{.spec.template.spec.containers[0].image}"
+rahbar-ui:dev

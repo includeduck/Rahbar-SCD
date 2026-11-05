@@ -1,0 +1,29 @@
+# One host: / to the ui, /api to the api with the prefix kept (the api's routes start with
+# /api). Needs `minikube addons enable ingress` (make cluster does this).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rahbar
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/part-of: rahbar
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rahbar.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ui
+                port:
+                  name: http

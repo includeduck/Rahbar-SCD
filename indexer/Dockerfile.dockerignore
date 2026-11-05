@@ -1,0 +1,11 @@
+# Used by BuildKit when building with -f indexer/Dockerfile from the repository root.
+# Allow-list: send only what indexer/Dockerfile copies, never corpus/raw/ or .git.
+*
+!indexer/requirements.txt
+!indexer/pipeline/
+!corpus/fetch.py
+!corpus/sources.yaml
+!corpus/MANIFEST.md
+!eval/fixtures/
+**/__pycache__
+**/*.pyc

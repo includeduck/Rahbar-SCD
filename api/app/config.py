@@ -33,6 +33,9 @@ class Settings:
     chroma_port: int = 8000
     collection: str = "rahbar"
 
+    # Semantic cache (section 3.3). Readiness also requires it to answer (section 4.3).
+    redis_url: str = "redis://redis:6379/0"
+
     # Retrieval and generation
     top_k: int = 5
     temperature: float = 0.2
@@ -52,6 +55,7 @@ def get_settings() -> Settings:
         chroma_host=os.environ.get("CHROMA_HOST", "chroma"),
         chroma_port=_int("CHROMA_PORT", 8000),
         collection=os.environ.get("CHROMA_COLLECTION", "rahbar"),
+        redis_url=os.environ.get("REDIS_URL", "redis://redis:6379/0"),
         top_k=_int("TOP_K", 5),
         temperature=_float("TEMPERATURE", 0.2),
         llm_model=os.environ.get("LLM_MODEL", "llama3.2:3b"),

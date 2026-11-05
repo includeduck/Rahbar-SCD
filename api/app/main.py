@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import redis
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
@@ -21,6 +23,7 @@ from .logjson import configure_logging, request_id_var
 from .providers.llm import get_provider
 from .retrieval import get_retriever
 from .routes import ask, health, metrics
+from .services.readiness import chroma_http_client, check_readiness
 
 log = logging.getLogger("rahbar.api")
 
@@ -32,15 +35,35 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.retriever = get_retriever(settings)
     app.state.provider = get_provider(settings)
-    # STARTER-TODO(4.4): compare the collection's embedding-model metadata with
-    # settings.embed_model here, and make /readyz fail on a mismatch.
+    # Clients for the readiness checks. Neither connects until it is first used.
+    app.state.chroma_http = chroma_http_client(settings)
+    app.state.redis = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=1,
+                                           socket_timeout=1)
     # This process only reads the index. The indexer Job writes it.
     log.info(
         "api started",
         extra={"retriever": settings.retriever, "llm_provider": settings.llm_provider,
                "embed_model": settings.embed_model, "top_k": settings.top_k},
     )
+    # Compare the index's embedding model with ours (section 4.4) without delaying startup:
+    # liveness must not wait on Chroma. /readyz repeats the check on every probe.
+    threading.Thread(target=startup_pin_check, args=(app,), daemon=True).start()
     yield
+    app.state.chroma_http.close()
+
+
+def startup_pin_check(app: FastAPI) -> None:
+    state = app.state
+    result = check_readiness(state.chroma_http, state.redis, state.settings)
+    state.readiness_failed = result.failed
+    if result.failed == "embed_model":
+        log.error("embedding model mismatch: refusing to become ready",
+                  extra={"conflict": result.checks["embed_model"]})
+    elif result.ready:
+        log.info("index matches EMBED_MODEL", extra={"checks": result.checks})
+    else:
+        log.warning("not ready at startup", extra={"failed": result.failed,
+                                                   "checks": result.checks})
 
 
 app = FastAPI(title="RAHBAR API", lifespan=lifespan)

@@ -1,0 +1,15 @@
+# For a build with indexer/ as the context. The normal build runs from the repository
+# root and uses Dockerfile.dockerignore instead; see the comment in Dockerfile.
+.git
+__pycache__
+**/__pycache__
+*.pyc
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+tests
+corpus
+.env
+*.log
