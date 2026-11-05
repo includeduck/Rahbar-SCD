@@ -42,7 +42,7 @@ able to explain every part in a viva.
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ⬜ |
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ⬜ |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ⬜ |
-| 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⬜ |
+| 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
 | 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ⬜ |
 | 12 | [Documentation and evidence](#phase-12-documentation-and-evidence) | Both | Rolling, finish Sun 8 | ⬜ |
 | 13 | [Submission](#phase-13-submission) | Both | Sun 8, by 20:00 | ⬜ |
@@ -325,10 +325,24 @@ answered.
 - [ ] `e2e-eval` job: kind cluster, apply the CI overlay, run the indexer Job on the fixture
       corpus, wait for rollout, run `eval/run_eval.py`, enforce the gate
   - Embeddings in CI: in-cluster Ollama with only `nomic-embed-text`, `LLM_PROVIDER=stub`
-- [ ] `cd.yml` on push to `main`: `test` → `build-push` (needs `test`, Docker Hub, tags =
-      commit SHA) → `deploy` (needs `build-push`, kind, `rollout status`, smoke test through
-      the Ingress)
-- [ ] Docker Hub **access token** in GitHub Secrets (not the password)
+- [x] [`cd.yml`](.github/workflows/cd.yml) on push to `main` (and by hand): `test` →
+      `build-push` (needs `test`; Trivy on the exact images, then push to Docker Hub tagged
+      with the commit SHA only) → `deploy` (needs `build-push`; runs
+      [`scripts/cd/deploy-kind.sh`](scripts/cd/deploy-kind.sh): kind cluster, ingress-nginx,
+      prod overlay pinned to the SHA, indexer Job, `rollout status` on everything, smoke test
+      through the Ingress). Tested end to end on a local kind cluster on 5 Nov; actionlint
+      and shellcheck clean. **Not yet run on GitHub**: it first runs when PR #2 merges
+- [ ] **Wasay:** repository variable `DOCKERHUB_USERNAME` and secret `DOCKERHUB_TOKEN` (an
+      access token with Read & Write scope, never the password), **before PR #2 merges**:
+      `gh variable set DOCKERHUB_USERNAME` and `gh secret set DOCKERHUB_TOKEN`. Keep the three
+      Docker Hub repositories public
+- [ ] After the first green run: link it and the Docker Hub tags in the README (both are
+      submission items)
+
+The deploy script also runs locally (Git Bash): `bash scripts/cd/deploy-kind.sh <prefix>
+<tag>` with kind and kustomize on the PATH. With Docker Desktop's containerd image store,
+`kind load docker-image` fails on pulled multi-platform images, so the script falls back to
+`docker save --platform` and `kind load image-archive`.
 - [ ] Gate demo: a PR that drops recall shows a red check and a greyed-out merge button,
       then green after the fix (screenshots)
 
