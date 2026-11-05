@@ -330,14 +330,14 @@ answered.
       with the commit SHA only) → `deploy` (needs `build-push`; runs
       [`scripts/cd/deploy-kind.sh`](scripts/cd/deploy-kind.sh): kind cluster, ingress-nginx,
       prod overlay pinned to the SHA, indexer Job, `rollout status` on everything, smoke test
-      through the Ingress). Tested end to end on a local kind cluster on 5 Nov; actionlint
-      and shellcheck clean. **Not yet run on GitHub**: it first runs when PR #2 merges
-- [ ] **Wasay:** repository variable `DOCKERHUB_USERNAME` and secret `DOCKERHUB_TOKEN` (an
-      access token with Read & Write scope, never the password), **before PR #2 merges**:
-      `gh variable set DOCKERHUB_USERNAME` and `gh secret set DOCKERHUB_TOKEN`. Keep the three
-      Docker Hub repositories public
-- [ ] After the first green run: link it and the Docker Hub tags in the README (both are
-      submission items)
+      through the Ingress). The first run on `main` (after PR #3) published the images but
+      `deploy` failed: the runner already has a root-owned `kind` in `/usr/local/bin`. Fixed by
+      installing into `$RUNNER_TEMP/bin`; a manual run on `dev` then passed all three jobs:
+      [run 42073476348](https://github.com/includeduck/Rahbar-SCD/actions/runs/42073476348)
+- [x] Repository variable `DOCKERHUB_USERNAME` (`mwasaytariq`) and secret `DOCKERHUB_TOKEN`;
+      the three Docker Hub repositories are public
+- [ ] After the fix reaches `main`: link the green **`main`** run and the Docker Hub tags in
+      the README (both are submission items)
 
 The deploy script also runs locally (Git Bash): `bash scripts/cd/deploy-kind.sh <prefix>
 <tag>` with kind and kustomize on the PATH. With Docker Desktop's containerd image store,
