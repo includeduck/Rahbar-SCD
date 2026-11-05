@@ -336,8 +336,12 @@ answered.
       [run 42073476348](https://github.com/includeduck/Rahbar-SCD/actions/runs/42073476348)
 - [x] Repository variable `DOCKERHUB_USERNAME` (`mwasaytariq`) and secret `DOCKERHUB_TOKEN`;
       the three Docker Hub repositories are public
-- [ ] After the fix reaches `main`: link the green **`main`** run and the Docker Hub tags in
-      the README (both are submission items)
+- [x] **Green on `main`** after PR #4: [run 42075316258](https://github.com/includeduck/Rahbar-SCD/actions/runs/42075316258)
+      (test → build-push → deploy, smoke test passed), images
+      `mwasaytariq/rahbar-{api,ui,indexer}:abaab10…` on
+      [Docker Hub](https://hub.docker.com/u/mwasaytariq). These are submission items 2 and 3;
+      the final submission should link the last green `main` run before the deadline
+- [ ] Put both links in the README (phase 12)
 
 The deploy script also runs locally (Git Bash): `bash scripts/cd/deploy-kind.sh <prefix>
 <tag>` with kind and kustomize on the PATH. With Docker Desktop's containerd image store,
