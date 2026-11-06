@@ -38,8 +38,8 @@ able to explain every part in a viva.
 | 3 | [Kubernetes around the stubs](#phase-3-kubernetes-around-the-stubs) | Wasay | Tue 3 – Wed 4 | ✅ Done (ADR 0001 left) |
 | 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay | Tue 3 | ✅ Done |
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Tue 3 | ✅ Done (ruleset step left) |
-| 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ⏳ Next |
-| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ⬜ |
+| 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ✅ Done |
+| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ✅ Code complete |
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ⬜ |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ⬜ |
 | 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
@@ -244,41 +244,41 @@ pushes to `dev`. First run green:
 
 ## Phase 6: Golden set and evaluation code
 
-**Owner:** Zain · **When:** Tue 3 – Wed 4 · (§5.1–§5.4)
+**Owner:** Zain · **When:** Tue 3 – Wed 4 · (§5.1–§5.4) · **Status:** ✅ Done
 
 Write the golden set **before tuning anything**: a set written from what the retriever
 already returns gives a flattering number that means nothing.
 
-- [ ] `eval/golden.yaml` with **≥ 15 questions** (aim for 18): 8 ordinary, 2 version,
+- [x] `eval/golden.yaml` with **≥ 15 questions** (aim for 18): 8 ordinary, 2 version,
       2 exact-term, 2 must-abstain, 1 injection. Draft questions are in the plan, §8.1
   - Version questions must use the rules that **changed** (failed courses 5.8, extra
     courses 4.3, medals 7.11, FYP credits 3.14), not attendance or CGPA
   - Must-abstain questions ask about **hostel rules** (application, fees, conduct), never
     about which campuses have hostels (that is answerable)
-- [ ] In `eval/run_eval.py`: `recall_at_k`, `citation_validity`, `summarise`, `gate`
-- [ ] Unit tests for all four functions
-- [ ] Section-matching rule decided and written in `docs/PIPELINE.md` (golden `"5.4"` matches
+- [x] In `eval/run_eval.py`: `recall_at_k`, `citation_validity`, `summarise`, `gate`
+- [x] Unit tests for all four functions
+- [x] Section-matching rule decided and written in `docs/PIPELINE.md` (golden `"5.4"` matches
       `"5.4 Academic Warning"`, not `"5.41"`)
 
 **Done when:** `make eval-fixtures` against `make dev` produces `results.json` and an exit code.
 
 ## Phase 7: Indexing pipeline
 
-**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4)
+**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4) · **Status:** ✅ Code complete (real index not yet built on minikube)
 
 Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 
-- [ ] **Extract:** PDF text per page with pdfplumber; tables kept row by row; pages with no
+- [x] **Extract:** PDF text per page with pdfplumber; tables kept row by row; pages with no
       text layer → OCR (pdf2image + pytesseract, `ocr=True`); HTML pages; Markdown fixtures
-- [ ] **Clean:** strip headers/footers that repeat on most pages and page numbers; keep
+- [x] **Clean:** strip headers/footers that repeat on most pages and page numbers; keep
       headings and clause numbers
-- [ ] **Chunk:** structure-aware (sections → paragraphs → sentences) with overlap; every
+- [x] **Chunk:** structure-aware (sections → paragraphs → sentences) with overlap; every
       chunk carries `source, section, page, doc_version, superseded`; stable ids
-- [ ] **Embed:** Ollama `/api/embed` with `EMBED_MODEL`, batched
-- [ ] **Store:** write a new collection, then switch a pointer to it, so re-indexing never
+- [x] **Embed:** Ollama `/api/embed` with `EMBED_MODEL`, batched
+- [x] **Store:** write a new collection, then switch a pointer to it, so re-indexing never
       empties the index (plan, D1); record `embed_model` and `dimension` in its metadata
 - [ ] Job's initContainer fetches the corpus into a PVC (with Wasay, plan D3)
-- [ ] Unit tests for clean, chunk and store
+- [x] Unit tests for clean, chunk and store
 
 **Done when:** the indexer Job builds the real index on minikube, and the pin demo flips from
 `dummy-768` to the real model.
@@ -336,8 +336,12 @@ answered.
       [run 42073476348](https://github.com/includeduck/Rahbar-SCD/actions/runs/42073476348)
 - [x] Repository variable `DOCKERHUB_USERNAME` (`mwasaytariq`) and secret `DOCKERHUB_TOKEN`;
       the three Docker Hub repositories are public
-- [ ] After the fix reaches `main`: link the green **`main`** run and the Docker Hub tags in
-      the README (both are submission items)
+- [x] **Green on `main`** after PR #4: [run 42075316258](https://github.com/includeduck/Rahbar-SCD/actions/runs/42075316258)
+      (test → build-push → deploy, smoke test passed), images
+      `mwasaytariq/rahbar-{api,ui,indexer}:abaab10…` on
+      [Docker Hub](https://hub.docker.com/u/mwasaytariq). These are submission items 2 and 3;
+      the final submission should link the last green `main` run before the deadline
+- [ ] Put both links in the README (phase 12)
 
 The deploy script also runs locally (Git Bash): `bash scripts/cd/deploy-kind.sh <prefix>
 <tag>` with kind and kustomize on the PATH. With Docker Desktop's containerd image store,

@@ -23,9 +23,10 @@ install: ## create .venv and install the api, indexer and tool dependencies
 	$(BIN)/pip install -q --upgrade pip
 	$(BIN)/pip install -q -r api/requirements-dev.txt -r indexer/requirements-dev.txt
 
-test: ## run the api and indexer tests (stubs only: no cluster, no model, no network)
+test: ## run the api, indexer and eval tests (stubs only: no cluster, no model, no network)
 	cd api && $(BIN)/pytest -q
 	cd indexer && $(BIN)/pytest -q
+	$(BIN)/pytest eval/tests -q
 
 lint: ## ruff and mypy over everything in Python
 	$(BIN)/ruff check api indexer eval corpus

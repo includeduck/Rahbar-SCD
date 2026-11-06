@@ -67,6 +67,8 @@ jobs:
       - name: pytest (indexer)
         working-directory: indexer
         run: pytest -q
+      - name: pytest (eval)
+        run: pytest eval/tests -q
 
   manifests:
     runs-on: ubuntu-24.04
