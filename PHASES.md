@@ -40,8 +40,8 @@ able to explain every part in a viva.
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Tue 3 | ✅ Done (ruleset step left) |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ✅ Done |
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ✅ Code complete |
-| 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ⬜ |
-| 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ⬜ |
+| 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ✅ Code complete |
+| 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ✅ Code complete |
 | 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
 | 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ⬜ |
 | 12 | [Documentation and evidence](#phase-12-documentation-and-evidence) | Both | Rolling, finish Sun 8 | ⬜ |
@@ -285,19 +285,23 @@ Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 
 ## Phase 8: Query pipeline and generation
 
-**Owner:** Zain · **When:** Thu 5 – Fri 6 · (§3.2, §3.4, §3.5)
+**Owner:** Zain · **When:** Thu 5 – Fri 6 · (§3.2, §3.4, §3.5) · **Status:** ✅ Code complete
 
-- [ ] `ChromaRetriever.retrieve`: same embedding model, top-k from the ConfigMap,
+Files: `api/app/retrieval/chroma.py`, `api/app/providers/llm/{ollama,hosted,prompt}.py`,
+`api/app/services/answer.py`, `api/app/routes/ask.py`.
+
+- [x] `ChromaRetriever.retrieve`: same embedding model, top-k from the ConfigMap,
       `superseded` filter unless the question asks about an older version
-- [ ] Relevance floor: below it, **abstain without calling the LLM**
-- [ ] Prompt: instructions, then numbered and delimited evidence, then the question
-- [ ] `OllamaProvider` (and `HostedProvider`): Answer JSON schema as `format=`, low
+- [x] Relevance floor: below it, **abstain without calling the LLM**
+- [x] Prompt: instructions, then numbered and delimited evidence, then the question
+- [x] `OllamaProvider` (and `HostedProvider`): Answer JSON schema as `format=`, low
       temperature, timeout
-- [ ] Validate with Pydantic, retry once, then a safe fallback (never a 500)
-- [ ] Drop any citation that does not match a retrieved chunk
+- [x] Validate with Pydantic, retry once, then a safe fallback (never a 500)
+- [x] Drop any citation that does not match a retrieved chunk
 - [ ] Switch the ConfigMap to `RETRIEVER=chroma` and a real `LLM_PROVIDER`
-- [ ] Tests: abstention, fallback on bad JSON, citation filter, **prompt injection with a
+- [x] Tests: abstention, fallback on bad JSON, citation filter, **prompt injection with a
       poisoned chunk**, superseded filter
+- [x] Pointer resolution: `readiness.py` and `ChromaRetriever` resolve `rahbar-active` pointer
 
 **Done when:** through the Ingress, an ordinary question gets a cited answer, a hostel-rules
 question gets `answered_from_context: false`, and the injection question is not obeyed.
@@ -307,14 +311,16 @@ answered.
 
 ## Phase 9: Semantic cache and metrics
 
-**Owner:** Zain (Wasay wires Redis) · **When:** Fri 6 · (§3.3, §4.8)
+**Owner:** Zain (Wasay wires Redis) · **When:** Fri 6 · (§3.3, §4.8) · **Status:** ✅ Code complete
 
-- [ ] Redis cache: hit when cosine ≥ the threshold from the ConfigMap
-- [ ] Never cache follow-ups, abstentions, fallbacks or failed validations
-- [ ] Invalidate on re-index (keys carry the index generation, plan D2)
+Files: `api/app/services/cache.py`, `api/app/routes/metrics.py`, `api/app/routes/ask.py`.
+
+- [x] Redis cache: hit when cosine ≥ the threshold from the ConfigMap
+- [x] Never cache follow-ups, abstentions, fallbacks or failed validations
+- [x] Invalidate on re-index (keys carry the index generation, plan D2)
 - [ ] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
-- [ ] `X-Cache: hit|miss` header (the UI shows it)
-- [ ] Metrics: retrieval and generation latency, cache hits, abstentions, fallbacks, tokens
+- [x] `X-Cache: hit|miss` header (the UI shows it)
+- [x] Metrics: retrieval and generation latency, cache hits, abstentions, fallbacks, tokens
       in and out; one log line per request with chunk ids and scores
 - [ ] ADR 0003 (why Redis), ADR 0004 (LLM provider and data governance)
 
