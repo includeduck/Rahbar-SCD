@@ -39,7 +39,7 @@ able to explain every part in a viva.
 | 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay | Tue 3 | ✅ Done |
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Tue 3 | ✅ Done (ruleset step left) |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ✅ Done |
-| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ✅ Done |
+| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ✅ Code complete |
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ⬜ |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ⬜ |
 | 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
@@ -264,7 +264,7 @@ already returns gives a flattering number that means nothing.
 
 ## Phase 7: Indexing pipeline
 
-**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4) · **Status:** ✅ Done
+**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4) · **Status:** ✅ Code complete (real index not yet built on minikube)
 
 Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 
@@ -277,7 +277,7 @@ Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 - [x] **Embed:** Ollama `/api/embed` with `EMBED_MODEL`, batched
 - [x] **Store:** write a new collection, then switch a pointer to it, so re-indexing never
       empties the index (plan, D1); record `embed_model` and `dimension` in its metadata
-- [x] Job's initContainer fetches the corpus into a PVC (with Wasay, plan D3)
+- [ ] Job's initContainer fetches the corpus into a PVC (with Wasay, plan D3)
 - [x] Unit tests for clean, chunk and store
 
 **Done when:** the indexer Job builds the real index on minikube, and the pin demo flips from

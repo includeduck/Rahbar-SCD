@@ -44,13 +44,13 @@ The chunking stage (`indexer/pipeline/chunk.py`) uses a recursive, structure-awa
 Token count is approximated via whitespace word count. Evaluated configurations against the golden evaluation set:
 
 | Configuration | Chunk Size (words) | Overlap (words) | recall@5 | Storage Amplification | Chunks Stored | Notes |
-| --- | --- | --- | --- | --- | --- |
-| Small / Fine | 200 | 40 | 0.8125 | 1.48x | 142 | Higher granularity; splits multi-clause policies |
-| **Shipped** | **400** | **50** | **0.8750** | **1.22x** | **84** | **Optimal balance of context and specificity** |
-| Large / Coarse | 800 | 100 | 0.8125 | 1.15x | 48 | Dilutes specific clause numbers in vector space |
-| Baseline Broken | 100 | 0 | 0.5625 | 1.02x | 210 | Arbitrary fixed cutoffs break clauses and context |
+| --- | --- | --- | --- | --- | --- | --- |
+| Small / Fine | 200 | 40 | _not yet measured_ | – | 874 | Higher granularity; splits multi-clause policies |
+| **Shipped** | **400** | **50** | _not yet measured_ | **–** | **592** | **Optimal balance of context and specificity** |
+| Large / Coarse | 800 | 100 | _not yet measured_ | – | 474 | Dilutes specific clause numbers in vector space |
+| Baseline Broken | 100 | 0 | _not yet measured_ | – | 1,285 | Arbitrary fixed cutoffs break clauses and context |
 
-*Storage amplification* is measured as total chunked tokens divided by original document tokens ($\approx 1.22\times$ for the shipped 400/50 configuration due to overlap and prepended section headers).
+Chunk counts are from running `chunk()` on the 7 text-layer documents (excluding the two OCR-only PDFs). `recall@5` and storage amplification require a working retriever (Phase 8) and will be measured then.
 
 ---
 
