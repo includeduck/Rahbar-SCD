@@ -319,7 +319,7 @@ Files: `api/app/services/cache.py`, `api/app/routes/metrics.py`, `api/app/routes
 - [x] Never cache follow-ups, abstentions, fallbacks or failed validations
 - [x] Invalidate on re-index (keys carry the index generation, plan D2)
 - [x] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
-      (measured in phase 11: 0.95 shipped; 0.85 produced false hit on academic warning query;
+      (measured in phase 11 by eval/cache_threshold.py: 0.95 gave two false hits, 0.97 shipped;
       ADR 0003 records the full sweep)
 - [x] `X-Cache: hit|miss` header (the UI shows it)
 - [x] Metrics: retrieval and generation latency, cache hits, abstentions, fallbacks, tokens
@@ -371,29 +371,33 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 **Owner:** both · **When:** Sat 7 · (§3.1, §4.5, §5.5) · **Status:** ✅ Done
 
 - [x] **Chunking:** at least 3 (size, overlap) settings, recall@5 for each, table in
-      `docs/PIPELINE.md`, ADR 0002 for the one we ship (no measurement = zero on that line)
+      `docs/PIPELINE.md`, ADR 0002 for the one we ship (no measurement = zero on that line).
+      Measured 8 Nov with `eval/chunk_sweep.py` (its 400/50 row reproduces the live run):
+      100/0 0.6875, 200/40 0.6562, 400/50 0.625, 800/100 0.5625; 400/50 kept, see ADR 0002
 - [x] Relevance floor and cache threshold chosen from golden-set scores
 - [x] Commit `eval/baseline.json` and `eval/results.json` (real corpus): first live run 7 Nov,
       recall@5 0.625, citation validity 1.00, abstention 1.00 (`docs/PIPELINE.md` §7)
 - [x] recall@3 and recall@5 by question type, and why exact-term recall is lower (§7: clause
       numbers carry little meaning for embeddings; "clause 1.21" by number is missed)
 - [x] Resource requests and limits set from **`kubectl top pods`** output (committed)
-- [x] `docs/FAILURE-ANALYSIS.md`: break 4 stages one at a time (planned: A no OCR,
-      B fixed 100-token chunks, C pin mismatch or `top_k: 1`, E no superseded filter)
+- [x] `docs/FAILURE-ANALYSIS.md`: five stages broken one at a time, each measured or run:
+      A no OCR, B 100/0 chunks, E no superseded filter (`eval/chunk_sweep.py`), C pin
+      mismatch (minikube, 3 Nov), D relevance floor lowered (the CI gate demo, PR #11)
 
 ## Phase 12: Documentation and evidence
 
-**Owner:** both, written as we go · **Finish:** Sun 8 · (§7, §10) · **Status:** ✅ Done
+**Owner:** both, written as we go · **Finish:** Sun 8 · (§7, §10) · **Status:** ⏳ Last items
 
-- [x] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
-      → answered question, API endpoint table, screenshot (−5 if the apply order fails)
+- [ ] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
+      → answered question, API endpoint table, screenshot (−5 if the apply order fails).
+      Left: the UI screenshot and a fresh-clone dry run of the apply order
 - [x] `docs/ARCHITECTURE.md` (why Chroma is a StatefulSet)
 - [x] `docs/PIPELINE.md`, `docs/FAILURE-ANALYSIS.md`, final `docs/CORPUS.md`
 - [x] `docs/ENGINEERING-NOTES.md`: all 7 questions **with our file paths and line numbers**
       (generic answers score zero). Note the "failure that cost us an hour" when it happens
-- [x] ADRs 0001–0004
-- [x] `docs/AI-USAGE.md` complete, including what we changed
-- [x] `docs/evidence/` (≥ 5 files): ruleset, blocked merge, `kubectl top`,
+- [x] ADRs 0001–0004 (ADR 0001 still to be rewritten in Wasay's own words, §4.2)
+- [ ] `docs/AI-USAGE.md` complete, including what we changed (many rows still say "Pending our review")
+- [ ] `docs/evidence/` (≥ 5 files): ruleset (screenshot still to add), blocked merge (PR #13), `kubectl top`,
       `kubectl get endpoints`, `kubectl get hpa`, plus rollout/undo, pin demo, NetworkPolicy
       test, pod deletion, re-index without redeploy
 
