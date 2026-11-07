@@ -318,7 +318,9 @@ Files: `api/app/services/cache.py`, `api/app/routes/metrics.py`, `api/app/routes
 - [x] Redis cache: hit when cosine ≥ the threshold from the ConfigMap
 - [x] Never cache follow-ups, abstentions, fallbacks or failed validations
 - [x] Invalidate on re-index (keys carry the index generation, plan D2)
-- [x] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
+- [ ] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
+      (not yet measured: `CACHE_THRESHOLD` 0.95 is a placeholder; done in phase 11 with
+      paraphrase pairs, the script and its output committed)
 - [x] `X-Cache: hit|miss` header (the UI shows it)
 - [x] Metrics: retrieval and generation latency, cache hits, abstentions, fallbacks, tokens
       in and out; one log line per request with chunk ids and scores

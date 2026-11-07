@@ -47,7 +47,7 @@ class Settings:
     # Relevance floor: below this similarity, abstain without calling the LLM
     relevance_floor: float = 0.25
 
-    # Semantic cache similarity threshold (exact-match via question hash)
+    # Semantic cache: a hit needs cosine similarity >= this. Placeholder until phase 11.
     cache_threshold: float = 0.95
 
     log_level: str = "INFO"

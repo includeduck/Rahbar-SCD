@@ -12,12 +12,12 @@ stored embeddings via cosine similarity. A hit requires similarity ≥ the
 Never-cache rules: abstentions, fallbacks, follow-ups, and ungrounded
 answers are never stored.
 
-Threshold tuning (3 values tried on the golden set):
-  0.99 — no false hits, but almost no hits at all (only exact duplicates)
-  0.95 — good hit rate, no false hits observed (SHIPPED)
-  0.85 — false hit: "What is academic warning?" matched "What is the
-         grading policy?" (both mention academic rules, cosine 0.88).
-         Ruled out because it returns a wrong cached answer.
+Threshold: ``CACHE_THRESHOLD`` (ConfigMap, currently 0.95) is a placeholder,
+not yet measured. Phase 11 tunes it with data: pairs of paraphrased questions
+that should hit and similar-but-different questions that must not, embedded
+with the pinned model; the shipped value is the lowest threshold with zero
+false hits. The thresholds tried and the false hit that ruled one out go in
+docs/PIPELINE.md, with the script and its output committed.
 """
 
 from __future__ import annotations

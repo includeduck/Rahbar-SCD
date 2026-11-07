@@ -10,6 +10,11 @@ RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 # Stage 2: the runtime. No compilers, no pip cache, no tests.
 FROM python:3.12.16-slim-trixie
+# Debian fixes CVEs faster than the base image is republished (zlib1g, CVE-2026-76844,
+# failed the CD scan on 7 Nov), so take the security updates at build time.
+RUN apt-get update \
+ && apt-get upgrade -y \
+ && rm -rf /var/lib/apt/lists/*
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

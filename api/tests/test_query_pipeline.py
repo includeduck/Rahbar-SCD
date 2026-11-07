@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from app.config import Settings
 from app.providers.llm.prompt import build_prompt
 from app.schemas import Answer, AskResponse, Citation, Passage, RetrievedRef
-from app.services.answer import answer_question, _filter_citations
+from app.services.answer import FALLBACK_MESSAGE, answer_question, _filter_citations
 from app.services.cache import SemanticCache, is_followup, _cosine_similarity
 
 
@@ -244,6 +244,9 @@ class TestAnswerPipeline:
         assert resp.answered_from_context is False
         assert resp.citations == []
         assert resp.confidence == "low"
+        # The unsupported claim itself must never reach the user
+        assert "skip 50%" not in resp.answer
+        assert resp.answer == FALLBACK_MESSAGE
         # Provider was called twice (initial + 1 retry)
         assert provider._call_count == 2
 
