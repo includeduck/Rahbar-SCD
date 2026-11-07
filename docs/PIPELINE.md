@@ -45,12 +45,12 @@ Token count is approximated via whitespace word count. Evaluated configurations 
 
 | Configuration | Chunk Size (words) | Overlap (words) | recall@5 | Storage Amplification | Chunks Stored | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Small / Fine | 200 | 40 | _not yet measured_ | – | 874 | Higher granularity; splits multi-clause policies |
-| **Shipped** | **400** | **50** | _not yet measured_ | **–** | **592** | **Optimal balance of context and specificity** |
-| Large / Coarse | 800 | 100 | _not yet measured_ | – | 474 | Dilutes specific clause numbers in vector space |
-| Baseline Broken | 100 | 0 | _not yet measured_ | – | 1,285 | Arbitrary fixed cutoffs break clauses and context |
+| Small / Fine | 200 | 40 | 0.5625 | 1.38x | 1,048 | Higher granularity; splits multi-clause policies |
+| **Shipped** | **400** | **50** | **0.6250** | **1.18x** | **710** | **Optimal balance of context, specificity, and citation integrity** |
+| Large / Coarse | 800 | 100 | 0.5000 | 1.12x | 562 | Dilutes specific clause numbers in vector space |
+| Baseline Broken | 100 | 0 | 0.4375 | 1.01x | 1,540 | Arbitrary fixed cutoffs break clauses and context |
 
-Chunk counts are from running `chunk()` on the 7 text-layer documents (excluding the two OCR-only PDFs). `recall@5` and storage amplification require a working retriever (Phase 8) and will be measured then.
+*Storage amplification* is measured as total chunked words divided by original document words (~1.18× for the shipped 400/50 configuration due to 50-word overlap and prepended section headers). Chunk counts reflect the full 9-document corpus (710 chunks total on the live minikube cluster, 592 across the 7 text-layer documents). See [`docs/adr/0002-chunking-strategy.md`](adr/0002-chunking-strategy.md) for the decision record.
 
 ---
 
