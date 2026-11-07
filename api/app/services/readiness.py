@@ -35,6 +35,7 @@ class Readiness:
 
     @property
     def ready(self) -> bool:
+        # ready when no check failed (collection count() > 0, embed_model matches, redis ping ok)
         return self.failed is None
 
     def fail(self, name: str, reason: str) -> Readiness:
@@ -114,7 +115,8 @@ def check_redis(redis_client: Pingable, result: Readiness) -> Readiness:
 
 
 def check_readiness(http: httpx.Client, redis_client: Pingable, settings: Settings) -> Readiness:
-    """Run every check, even after one fails, so the response lists them all."""
+    """Run every check, even after one fails, so the response lists them all.
+    Checks chroma connection, non-empty collection (count() > 0), embed model pin, and redis."""
     result = Readiness()
     try:
         check_chroma(http, settings, result)
