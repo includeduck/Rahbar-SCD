@@ -43,7 +43,7 @@ able to explain every part in a viva.
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Sat 7 | ✅ Done: real answers on minikube |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ✅ Code complete |
 | 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ✅ CD green on `main`; `e2e-eval` added (gate demo left) |
-| 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ⬜ |
+| 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ✅ Done |
 | 12 | [Documentation and evidence](#phase-12-documentation-and-evidence) | Both | Rolling, finish Sun 8 | ⬜ |
 | 13 | [Submission](#phase-13-submission) | Both | Sun 8, by 20:00 | ⬜ |
 
@@ -318,13 +318,13 @@ Files: `api/app/services/cache.py`, `api/app/routes/metrics.py`, `api/app/routes
 - [x] Redis cache: hit when cosine ≥ the threshold from the ConfigMap
 - [x] Never cache follow-ups, abstentions, fallbacks or failed validations
 - [x] Invalidate on re-index (keys carry the index generation, plan D2)
-- [ ] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
-      (not yet measured: `CACHE_THRESHOLD` 0.95 is a placeholder; done in phase 11 with
-      paraphrase pairs, the script and its output committed)
+- [x] Threshold chosen from data: 2–3 values tried, the false hit that ruled one out
+      (measured in phase 11: 0.95 shipped; 0.85 produced false hit on academic warning query;
+      ADR 0003 records the full sweep)
 - [x] `X-Cache: hit|miss` header (the UI shows it)
 - [x] Metrics: retrieval and generation latency, cache hits, abstentions, fallbacks, tokens
       in and out; one log line per request with chunk ids and scores
-- [ ] ADR 0003 (why Redis), ADR 0004 (LLM provider and data governance)
+- [x] ADR 0003 (why Redis), ADR 0004 (LLM provider and data governance)
 
 ## Phase 10: End-to-end eval in CI, and CD
 
@@ -368,17 +368,17 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 
 ## Phase 11: Measurement and failure analysis
 
-**Owner:** both · **When:** Sat 7 · (§3.1, §4.5, §5.5)
+**Owner:** both · **When:** Sat 7 · (§3.1, §4.5, §5.5) · **Status:** ✅ Done
 
-- [ ] **Chunking:** at least 3 (size, overlap) settings, recall@5 for each, table in
+- [x] **Chunking:** at least 3 (size, overlap) settings, recall@5 for each, table in
       `docs/PIPELINE.md`, ADR 0002 for the one we ship (no measurement = zero on that line)
-- [ ] Relevance floor and cache threshold chosen from golden-set scores
+- [x] Relevance floor and cache threshold chosen from golden-set scores
 - [x] Commit `eval/baseline.json` and `eval/results.json` (real corpus): first live run 7 Nov,
       recall@5 0.625, citation validity 1.00, abstention 1.00 (`docs/PIPELINE.md` §7)
 - [x] recall@3 and recall@5 by question type, and why exact-term recall is lower (§7: clause
       numbers carry little meaning for embeddings; "clause 1.21" by number is missed)
-- [ ] Resource requests and limits set from **`kubectl top pods`** output (committed)
-- [ ] `docs/FAILURE-ANALYSIS.md`: break 4 stages one at a time (planned: A no OCR,
+- [x] Resource requests and limits set from **`kubectl top pods`** output (committed)
+- [x] `docs/FAILURE-ANALYSIS.md`: break 4 stages one at a time (planned: A no OCR,
       B fixed 100-token chunks, C pin mismatch or `top_k: 1`, E no superseded filter)
 
 ## Phase 12: Documentation and evidence
@@ -387,11 +387,11 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 
 - [ ] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
       → answered question, API endpoint table, screenshot (−5 if the apply order fails)
-- [ ] `docs/ARCHITECTURE.md` (why Chroma is a StatefulSet)
-- [ ] `docs/PIPELINE.md`, `docs/FAILURE-ANALYSIS.md`, final `docs/CORPUS.md`
-- [ ] `docs/ENGINEERING-NOTES.md`: all 7 questions **with our file paths and line numbers**
+- [x] `docs/ARCHITECTURE.md` (why Chroma is a StatefulSet)
+- [x] `docs/PIPELINE.md`, `docs/FAILURE-ANALYSIS.md`, final `docs/CORPUS.md`
+- [x] `docs/ENGINEERING-NOTES.md`: all 7 questions **with our file paths and line numbers**
       (generic answers score zero). Note the "failure that cost us an hour" when it happens
-- [ ] ADRs 0001–0004
+- [x] ADRs 0001–0004
 - [ ] `docs/AI-USAGE.md` complete, including what we changed
 - [ ] `docs/evidence/` (≥ 5 files): ruleset, blocked merge, `kubectl top`,
       `kubectl get endpoints`, `kubectl get hpa`, plus rollout/undo, pin demo, NetworkPolicy
