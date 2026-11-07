@@ -35,11 +35,14 @@ DEFAULT_RELEVANCE_FLOOR = 0.25
 GENERATE_RETRIES = 1
 
 
+FALLBACK_MESSAGE = "I was unable to generate a reliable answer. Please rephrase or try again."
+
+
 def _safe_fallback() -> Answer:
     """A safe answer when something goes wrong — never a 500."""
     return Answer(
         reasoning="fallback: could not generate a reliable answer",
-        answer="I was unable to generate a reliable answer. Please rephrase or try again.",
+        answer=FALLBACK_MESSAGE,
         citations=[],
         answered_from_context=False,
         confidence="low",
@@ -92,12 +95,13 @@ def _generate_and_validate(
             )
             if attempt < GENERATE_RETRIES:
                 continue
-            # Final attempt: force to abstention, never cache
+            # Final attempt: force to abstention, never cache. The model's text is
+            # not shown: it made claims that no retrieved passage supports.
             prom.FALLBACKS.inc()
             return Answer(
                 reasoning="fallback: model claimed to answer from context but "
                           "cited only passages that were not retrieved",
-                answer=answer.answer,
+                answer=FALLBACK_MESSAGE,
                 citations=[],
                 answered_from_context=False,
                 confidence="low",
