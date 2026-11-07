@@ -1,0 +1,18 @@
+# Where the indexer's fetch-corpus initContainer downloads the FAST-NUCES documents. A
+# volume rather than the image, because the documents are not ours to republish on Docker
+# Hub. fetch.py skips files it already has, so each document is downloaded once, and every
+# run re-checks them against the committed corpus/MANIFEST.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: corpus-data
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

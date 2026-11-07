@@ -5,11 +5,16 @@
     python corpus/fetch.py --force               # download everything again
     python corpus/fetch.py --verify              # re-hash local files against MANIFEST.md
     python corpus/fetch.py --list URL            # list the documents linked from an index page
+    python corpus/fetch.py --out /corpus         # download into another folder (the indexer Job)
+    python corpus/fetch.py --out /corpus --verify   # check that folder against MANIFEST.md
 
 Writes:
     corpus/raw/<file>         the documents (gitignored: never commit someone else's PDFs)
     corpus/raw/_index.json    file -> doc_version, superseded; the indexer reads this
     corpus/MANIFEST.md        URL, size and SHA-256 per document (commit this)
+
+With --out DIR, the documents, _index.json and the generated manifest all go to DIR, and
+the committed corpus/MANIFEST.md is left alone: --verify still checks against it.
 
 Rules this script follows so 40 teams do not hammer one university website:
 one request at a time, a pause between requests, a clear User-Agent, each file
@@ -35,7 +40,8 @@ import yaml
 HERE = Path(__file__).resolve().parent
 RAW = HERE / "raw"
 SOURCES = HERE / "sources.yaml"
-MANIFEST = HERE / "MANIFEST.md"
+MANIFEST = HERE / "MANIFEST.md"      # the committed manifest; --verify checks against it
+WRITTEN_MANIFEST = MANIFEST          # where fetch writes its manifest (--out moves it)
 USER_AGENT = "RAHBAR-coursework-fetcher/1.0 (CS4032 student project; one request at a time)"
 PAUSE_SECONDS = 2.0
 DRIVE_VIEW = re.compile(r"https?://drive\.google\.com/file/d/([^/?#]+)")
@@ -94,7 +100,7 @@ def load_sources() -> list[dict]:
 
 def fetch(force: bool) -> int:
     docs = load_sources()
-    RAW.mkdir(exist_ok=True)
+    RAW.mkdir(parents=True, exist_ok=True)
     index_path = RAW / "_index.json"
     previous = {e["name"]: e for e in json.loads(index_path.read_text())} \
         if index_path.exists() else {}
@@ -136,7 +142,7 @@ def fetch(force: bool) -> int:
 
     index_path.write_text(json.dumps(entries, indent=2), encoding="utf-8")
     write_manifest(entries)
-    print(f"\n{len(entries)} documents in corpus/raw, manifest written to corpus/MANIFEST.md")
+    print(f"\n{len(entries)} documents in {RAW}, manifest written to {WRITTEN_MANIFEST}")
     if failures:
         print(f"{len(failures)} failed; fix their URLs in sources.yaml and run again:")
         for name, reason in failures:
@@ -159,7 +165,7 @@ def write_manifest(entries: list[dict]) -> None:
     for e in entries:
         lines.append(f"| {e['name']} | {e['doc_version']} | {'yes' if e['superseded'] else 'no'} "
                      f"| `{e['file']}` | {e['bytes']:,} | `{e['sha256']}` | <{e['url']}> |")
-    MANIFEST.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    WRITTEN_MANIFEST.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def verify() -> int:
@@ -229,7 +235,13 @@ def main() -> int:
     group.add_argument("--force", action="store_true", help="download everything again")
     group.add_argument("--verify", action="store_true", help="check local files against MANIFEST.md")
     group.add_argument("--list", metavar="URL", help="list document links on an index page")
+    parser.add_argument("--out", metavar="DIR", type=Path,
+                        help="download into DIR instead of corpus/raw (the indexer Job's volume)")
     args = parser.parse_args()
+    if args.out:
+        global RAW, WRITTEN_MANIFEST
+        RAW = args.out
+        WRITTEN_MANIFEST = args.out / "MANIFEST.md"
     if args.verify:
         return verify()
     if args.list:

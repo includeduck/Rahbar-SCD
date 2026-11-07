@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: indexer
     app.kubernetes.io/part-of: rahbar
 spec:
-  # Retries cover a Chroma that is not ready yet when the Job starts.
+  # Retries cover a Chroma or a website that is not reachable yet when the Job starts.
   backoffLimit: 4
   activeDeadlineSeconds: 3600
   template:
@@ -27,11 +27,38 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 10001
+        # The corpus volume must be writable by uid 10001.
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
-      # On a fresh cluster Chroma can take minutes (image pull, PVC binding). Wait for its
-      # heartbeat here instead of burning the Job's backoffLimit on connection errors.
       initContainers:
+        # 1. Download the documents into the corpus volume (each one only once), then check
+        #    every file against the SHA-256 in the committed corpus/MANIFEST.md.
+        - name: fetch-corpus
+          image: rahbar-indexer
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - python /app/corpus/fetch.py --out /corpus && python /app/corpus/fetch.py --out /corpus --verify
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: corpus
+              mountPath: /corpus
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+        # 2. On a fresh cluster Chroma can take minutes (image pull, PVC binding). Wait for
+        #    its heartbeat here instead of burning the Job's backoffLimit on connection errors.
         - name: wait-for-chroma
           image: rahbar-indexer
           imagePullPolicy: IfNotPresent
@@ -71,9 +98,9 @@ spec:
         - name: indexer
           image: rahbar-indexer
           imagePullPolicy: IfNotPresent
-          # Phase 3: three dummy chunks, no model. Phase 7 drops --dummy here and in the
-          # CronJob, which must keep the same image and arguments.
-          args: ["python", "-m", "pipeline.run", "--dummy"]
+          # extract → clean → chunk → embed → store. The CronJob runs the same image and
+          # arguments.
+          args: ["python", "-m", "pipeline.run"]
           envFrom:
             - configMapRef:
                 name: rahbar-config
@@ -87,6 +114,9 @@ spec:
               cpu: "2"
               memory: 2Gi
           volumeMounts:
+            - name: corpus
+              mountPath: /corpus
+              readOnly: true
             - name: tmp
               mountPath: /tmp
           securityContext:
@@ -96,5 +126,8 @@ spec:
               drop:
                 - ALL
       volumes:
+        - name: corpus
+          persistentVolumeClaim:
+            claimName: corpus-data
         - name: tmp
           emptyDir: {}

@@ -20,7 +20,6 @@ from .prompt import build_prompt
 
 log = logging.getLogger("rahbar.provider.ollama")
 
-TIMEOUT = 60.0
 # Number of retries on validation failure before falling back
 RETRIES = 1
 
@@ -46,7 +45,7 @@ class OllamaProvider:
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self._client = httpx.Client(timeout=TIMEOUT)
+        self._client = httpx.Client(timeout=settings.llm_timeout_seconds)
 
     def generate(self, question: str, passages: list[Passage]) -> Answer:
         prompt = build_prompt(question, passages)
@@ -63,7 +62,9 @@ class OllamaProvider:
         last_error: str = ""
         for attempt in range(1 + RETRIES):
             try:
-                resp = self._client.post(url, json=payload, timeout=TIMEOUT)
+                resp = self._client.post(
+                    url, json=payload, timeout=self.settings.llm_timeout_seconds,
+                )
                 resp.raise_for_status()
                 data = resp.json()
 

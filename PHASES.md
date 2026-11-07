@@ -39,8 +39,8 @@ able to explain every part in a viva.
 | 4 | [Hardening: probes, pin, security, scaling](#phase-4-hardening-probes-pin-security-scaling) | Wasay | Tue 3 | ✅ Done |
 | 5 | [CI pipeline](#phase-5-ci-pipeline-ciyml) | Wasay | Tue 3 | ✅ Done (ruleset step left) |
 | 6 | [Golden set and evaluation code](#phase-6-golden-set-and-evaluation-code) | Zain | Tue 3 – Wed 4 | ✅ Done |
-| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain | Wed 4 – Thu 5 | ✅ Code complete |
-| 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Fri 6 | ✅ Code complete |
+| 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain (+ Wasay for the corpus volume) | Wed 4 – Sat 7 | ✅ Done: real index on minikube |
+| 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Sat 7 | ✅ Done: real answers on minikube |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ✅ Code complete |
 | 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
 | 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ⬜ |
@@ -264,7 +264,7 @@ already returns gives a flattering number that means nothing.
 
 ## Phase 7: Indexing pipeline
 
-**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4) · **Status:** ✅ Code complete (real index not yet built on minikube)
+**Owner:** Zain · **When:** Wed 4 – Thu 5 · (§3.1, §4.4) · **Status:** ✅ Done. First real run 7 Nov: 710 chunks in 8 min 20 s, `docs/evidence/real-pipeline-first-run.txt`
 
 Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 
@@ -277,7 +277,7 @@ Files: `indexer/pipeline/{extract,clean,chunk,embed,store}.py`.
 - [x] **Embed:** Ollama `/api/embed` with `EMBED_MODEL`, batched
 - [x] **Store:** write a new collection, then switch a pointer to it, so re-indexing never
       empties the index (plan, D1); record `embed_model` and `dimension` in its metadata
-- [ ] Job's initContainer fetches the corpus into a PVC (with Wasay, plan D3)
+- [x] Job's initContainer fetches the corpus into a PVC (`fetch-corpus`, `corpus-data`), verified against `MANIFEST.md`
 - [x] Unit tests for clean, chunk and store
 
 **Done when:** the indexer Job builds the real index on minikube, and the pin demo flips from
@@ -298,7 +298,7 @@ Files: `api/app/retrieval/chroma.py`, `api/app/providers/llm/{ollama,hosted,prom
       temperature, timeout
 - [x] Validate with Pydantic, retry once, then a safe fallback (never a 500)
 - [x] Drop any citation that does not match a retrieved chunk
-- [ ] Switch the ConfigMap to `RETRIEVER=chroma` and a real `LLM_PROVIDER`
+- [x] Switch the ConfigMap to `RETRIEVER=chroma` and a real `LLM_PROVIDER` (base; the smoke overlay keeps stubs for CD)
 - [x] Tests: abstention, fallback on bad JSON, citation filter, **prompt injection with a
       poisoned chunk**, superseded filter
 - [x] Pointer resolution: `readiness.py` and `ChromaRetriever` resolve `rahbar-active` pointer
@@ -367,8 +367,10 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 - [ ] **Chunking:** at least 3 (size, overlap) settings, recall@5 for each, table in
       `docs/PIPELINE.md`, ADR 0002 for the one we ship (no measurement = zero on that line)
 - [ ] Relevance floor and cache threshold chosen from golden-set scores
-- [ ] Commit `eval/baseline.json` and `eval/results.json` (real corpus)
-- [ ] recall@3 and recall@5 by question type, and why exact-term recall is lower
+- [x] Commit `eval/baseline.json` and `eval/results.json` (real corpus): first live run 7 Nov,
+      recall@5 0.625, citation validity 1.00, abstention 1.00 (`docs/PIPELINE.md` §7)
+- [x] recall@3 and recall@5 by question type, and why exact-term recall is lower (§7: clause
+      numbers carry little meaning for embeddings; "clause 1.21" by number is missed)
 - [ ] Resource requests and limits set from **`kubectl top pods`** output (committed)
 - [ ] `docs/FAILURE-ANALYSIS.md`: break 4 stages one at a time (planned: A no OCR,
       B fixed 100-token chunks, C pin mismatch or `top_k: 1`, E no superseded filter)

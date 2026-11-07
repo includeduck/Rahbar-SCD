@@ -16,12 +16,13 @@ superseded one, and says so when the documents do not cover the question.
 SE3005 Software Construction and Development, Assignment 02 · Muhammad Wasay Tariq and
 Muhammad Zain Bin Jabir.
 
-> **Status, 7 November 2026.** The platform is complete and verified: every Kubernetes
-> object, the probes and embedding-model guardrail, NetworkPolicies, HPA, CI and CD. The
-> indexing pipeline and the golden set are merged; the query pipeline (real retriever,
-> Ollama generation, abstention, semantic cache) is in review. Until it merges, the
-> deployed configuration uses the starter kit's stub retriever and model, and the indexer
-> Job writes three dummy chunks. Progress: [`PHASES.md`](PHASES.md).
+> **Status, 7 November 2026.** The full pipeline runs on minikube: the indexer Job
+> downloads and verifies the nine documents, OCRs the scanned ones and builds a 710-chunk
+> index; the api answers with citations, declines the hostel questions and serves repeats
+> from the semantic cache ([`docs/evidence/real-pipeline-first-run.txt`](docs/evidence/real-pipeline-first-run.txt)).
+> Still to come: the measured evaluation baseline and tuning (chunking, relevance floor,
+> cache threshold), the `e2e-eval` CI job, and the remaining docs.
+> Progress: [`PHASES.md`](PHASES.md).
 
 ## Architecture
 
@@ -126,11 +127,14 @@ make secret
 kubectl apply -k k8s/overlays/dev
 ```
 
-**6. Wait for the indexer Job, then for the api.** The api reports ready only once the
-collection exists, is not empty and matches `EMBED_MODEL`:
+**6. Wait for the indexer Job, then for the api.** The Job first downloads the nine
+documents into the `corpus-data` volume and checks each against
+[`corpus/MANIFEST.md`](corpus/MANIFEST.md), then builds the index (about 9 minutes on a
+laptop CPU, mostly OCR and embedding). The api reports ready only once the collection
+exists, is not empty and matches `EMBED_MODEL`:
 
 ```bash
-kubectl -n rahbar wait --for=condition=complete job/indexer --timeout=15m
+kubectl -n rahbar wait --for=condition=complete job/indexer --timeout=30m
 kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
 
@@ -147,8 +151,7 @@ To use the chat page in a browser, add `<ingress ip> rahbar.local` to your hosts
 open `http://rahbar.local`.
 
 **8. Ask about something the documents do not cover.** Hostel rules are left out on
-purpose; with the real pipeline the answer comes back with `"answered_from_context": false`
-(the starter kit's stub, still deployed today, answers everything):
+purpose; the answer comes back with `"answered_from_context": false`:
 
 ```bash
 make ask Q="How do I apply for a hostel room?"
@@ -180,7 +183,7 @@ Sunday 03:00 PKT.
 | POST | `/api/ask` | `{"question": "..."}` (3 to 500 characters) → answer, citations, `answered_from_context`, `confidence`, the retrieved passages. Echoes `X-Request-ID`; `X-Cache: hit\|miss` |
 | GET | `/healthz` | Liveness: the process is alive. Touches no dependency |
 | GET | `/readyz` | Readiness: Chroma reachable, collection non-empty, embedding model matches, Redis reachable; otherwise 503 naming the failure |
-| GET | `/metrics` | Prometheus metrics: request count and latency by route; retrieval and generation latency, cache hits, abstentions, fallbacks and tokens arrive with the query pipeline |
+| GET | `/metrics` | Prometheus metrics: request count and latency by route, retrieval and generation latency, cache hits and misses, abstentions, fallbacks, tokens in and out |
 | GET | `/docs` | Interactive API documentation (FastAPI) |
 
 ## Configuration

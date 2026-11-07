@@ -2,6 +2,15 @@
 # Written BEFORE tuning: 18 questions (8 ordinary, 3 version, 2 exact, 2 abstain, 1 injection, 2 extra ordinary).
 # The source values match corpus/fetch.py slug(name) + extension.
 # Section values are what our structure-aware chunker records as headings.
+#
+# 7 Nov, before the first live run: nine labels were corrected to the chunk whose TEXT holds
+# the answer (checked by searching every chunk's text in the live index, not by what the
+# retriever returns). Some labels look odd because they record chunker defects that the
+# failure analysis covers: two-column PDFs are read straight across, so clause 5.8 sits in
+# the chunk labelled "5.1 The performance of students..." and the 2023 course-load rule under
+# "3.22 Transfer..."; Student Handbook chunks are labelled with the page's running header
+# ("34 Student Handbook 2026"); Prospectus chunks are "Untitled". Questions and intended
+# answers are unchanged. When the chunker is fixed, these labels must be updated with it.
 
 questions:
   # --- Ordinary (8) ---
@@ -31,33 +40,34 @@ questions:
     type: ordinary
     question: Which campuses have an in-campus hostel?
     relevant:
-      - {source: student-handbook-jun-2026.pdf, section: "Hostel"}
+      - {source: student-handbook-jun-2026.pdf, section: "34 Student Handbook 2026"}
+      - {source: student-handbook-jun-2026.pdf, section: "36 Student Handbook 2026"}
     expect: "Chiniot-Faisalabad"
 
   - id: q05
     type: ordinary
     question: How many times can a failed course be repeated?
     relevant:
-      - {source: academic-rules-handbook-jun-2026.pdf, section: "5.8"}
+      - {source: academic-rules-handbook-jun-2026.pdf, section: "5.1 The performance of students"}
 
   - id: q06
     type: ordinary
     question: How many grade points is a B+ worth?
     relevant:
-      - {source: grading-page.html, section: "Grading"}
+      - {source: grading-page.html, section: "Letter Code Interpretation"}
     expect: "3.33"
 
   - id: q07
     type: ordinary
     question: What is the refund policy if a student drops a course after 10 days?
     relevant:
-      - {source: fee-structure-page.html, section: "Fee"}
+      - {source: fee-structure-page.html, section: "Fee Refund Policy"}
 
   - id: q08
     type: ordinary
     question: What does the Generative AI policy say about using AI tools in assignments?
     relevant:
-      - {source: student-handbook-jun-2026.pdf, section: "Generative AI"}
+      - {source: student-handbook-jun-2026.pdf, section: "6.1 Use in Non-Lab Courses"}
 
   # --- Version (3) ---
 
@@ -65,7 +75,7 @@ questions:
     type: version
     question: If I fail a course, when do I have to retake it under the current rules?
     relevant:
-      - {source: academic-rules-handbook-jun-2026.pdf, section: "5.8"}
+      - {source: academic-rules-handbook-jun-2026.pdf, section: "5.1 The performance of students"}
     expect: "next semester"
 
   - id: q10
@@ -79,7 +89,7 @@ questions:
     type: version
     question: Under the 2023 rules, could a student take extra courses beyond the normal load?
     relevant:
-      - {source: undergraduate-academic-rules-aug-2023.pdf, section: "4"}
+      - {source: undergraduate-academic-rules-aug-2023.pdf, section: "3.22 Transfer shall not be considered"}
 
   # --- Exact-term (2) ---
 
@@ -94,7 +104,7 @@ questions:
     type: exact
     question: What is the tuition fee per credit hour for BS programmes?
     relevant:
-      - {source: fee-structure-page.html, section: "Fee"}
+      - {source: fee-structure-page.html, section: "Tuition Fee"}
     expect: "12,000"
 
   # --- Must-abstain (2) ---
@@ -134,5 +144,5 @@ questions:
     question: What is the minimum attendance percentage required for a student to sit the final exam?
     relevant:
       - {source: academic-rules-handbook-jun-2026.pdf, section: "1.21"}
-      - {source: prospectus-2026-academic-rules-and-regulations.pdf, section: "1"}
+      - {source: prospectus-2026-academic-rules-and-regulations.pdf, section: "Untitled"}
     expect: "100"

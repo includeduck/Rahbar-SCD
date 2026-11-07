@@ -86,10 +86,61 @@ When comparing a retrieved passage's `section` against a golden relevant item `(
   1. It is an exact string match (`golden_section == retrieved_section`), **OR**
   2. The retrieved section starts with the golden section followed immediately by a non-digit character (e.g. whitespace, punctuation).
 
-> **Example:** Golden section `"5.4"` matches `"5.4 Academic Warning"` or `"5.4 - Warning"`, but does **not** match `"5.41"` or `"5.4.1"`.
+> **Example:** Golden section `"5.4"` matches `"5.4 Academic Warning"` or `"5.4 - Warning"`, but does **not** match `"5.41"`. It **does** match `"5.4.1"` (the next character is `.`, not a digit), which is acceptable for recall since a sub-clause sits inside its clause. The api's citation check (`api/app/services/answer.py`, `_section_matches`) is stricter and rejects `"5.4.1"`, so a citation never names a different clause.
 
 ### Metrics & Gating
 - **`recall@k`:** Fraction of required `(source, section)` relevant targets retrieved within the top $k$ candidates.
 - **`citation_validity`:** Fraction of citations in the generated answer that match an actual retrieved passage.
 - **`abstention_correctness`:** Ensures $100\%$ of `must_abstain` queries (hostel rules) return `answered_from_context: false`.
 - **CI Gate:** Automated failure if `recall@5` drops by more than $0.05$ against baseline, citation validity $< 95\%$, or any `must_abstain` question is answered from context.
+
+---
+
+## 7. First measured evaluation (7 November 2026)
+
+The first run of `eval/run_eval.py` against the live stack: minikube, dev overlay, 710-chunk
+index (400/50 words), `nomic-embed-text`, `llama3.2:3b` on the host CPU, `TOP_K=5`,
+`MAX_CONTEXT_PASSAGES=3`, `RELEVANCE_FLOOR=0.50`, cache cleared before the run. All 18
+questions through the Ingress, 11 to 58 s each. Output: [`eval/results.json`](../eval/results.json),
+also committed as the first [`eval/baseline.json`](../eval/baseline.json).
+
+| Metric | Value |
+| --- | ---: |
+| recall@3 | 0.5625 |
+| recall@5 | 0.625 |
+| citation validity | 1.00 (every citation matched a retrieved chunk) |
+| abstention correctness | 1.00 (both hostel questions declined) |
+
+| Question type | recall@5 | What limited it |
+| --- | ---: | --- |
+| ordinary (10) | 0.70 | q05 and q06 missed (below); q04 found one of the two duplicate hostel chunks |
+| version (3) | 0.33 | q09: clause 5.8 is buried in the chunk labelled "5.1 ..." (two-column extraction); q11: the 2023 course-load rule sits under "3.22 ..." in the OCR'd text |
+| exact (2) | 0.50 | **q12 "What does clause 1.21 require?" retrieved nothing relevant**, although the same clause is found for q02 and q18 when asked about by its content |
+| injection (1) | 1.00 | |
+
+**Findings.**
+1. **Exact terms are where embeddings struggle.** Asking for "clause 1.21" by number misses,
+   asking about attendance by meaning finds it. A clause number carries almost no meaning
+   for an embedding model; this is what hybrid retrieval (BM25 or a keyword filter on
+   clause numbers, fused with the vector results) is for.
+2. **Extraction, not retrieval, caused the version misses.** pdfplumber reads two-column
+   pages straight across, so clause 5.8's heading lands mid-line inside another clause's
+   chunk, and the Prospectus chunks have no headings at all ("Untitled"). Student Handbook
+   chunks are labelled with the running page header ("34 Student Handbook 2026"), which
+   repeats with a different page number on every page, so the "exact repetition" cleaning
+   rule never strips it. Some Student Handbook pages appear twice. The golden labels were
+   set to the chunks that contain each answer (see the note in `eval/golden.yaml`).
+3. **The model, not the floor, did the abstaining.** Every question went to the LLM: the
+   best similarity scores were 0.597 and 0.612 for the two hostel questions and 0.623 to
+   0.888 for the answerable ones, all above the 0.50 floor. A floor near 0.615 would
+   separate them on this run, but the gap is 0.011, too thin to rely on alone.
+4. **The model is over-cautious.** 11 of 18 answers came back
+   `answered_from_context: false`, including q07, q16 and q17 whose relevant passage was
+   retrieved. No citations were dropped and no fallback fired: `llama3.2:3b` declined by
+   itself. q10's passage ranked 4th or 5th, so with `MAX_CONTEXT_PASSAGES=3` the model never
+   saw it.
+
+**Next (phase 11).** Fix two-column extraction and the page-header cleaning, then re-index
+and re-run; measure the three chunking settings; try hybrid retrieval for exact terms;
+choose the relevance floor and cache threshold from these scores; compare
+`MAX_CONTEXT_PASSAGES` 3 against 5 against answer time.

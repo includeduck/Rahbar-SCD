@@ -7,6 +7,11 @@ metadata:
   namespace: rahbar
   labels:
     app.kubernetes.io/part-of: rahbar
+  annotations:
+    # Generation on a laptop CPU can take longer than ingress-nginx's 60 s default. The api
+    # allows LLM_TIMEOUT_SECONDS (120) per attempt and up to two attempts, so 300 s here.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 spec:
   ingressClassName: nginx
   rules:
