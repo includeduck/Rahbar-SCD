@@ -1,0 +1,173 @@
+# In-cluster Ollama for CI's kind cluster (ollama-incluster mode, embeddings only).
+# GitHub's runners have no Ollama on the host, so the e2e-eval job runs one inside the
+# cluster and pulls only nomic-embed-text (~270 MB). Generation stays on the stub provider.
+# The -rocm image (1.46 GB) runs on CPU like the default one (3.39 GB) but leaves out the
+# NVIDIA libraries, which matters on every CI run.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ollama
+  namespace: rahbar
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: ollama
+    app.kubernetes.io/part-of: rahbar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ollama
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ollama
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: ollama
+      automountServiceAccountToken: false
+      # A Service named ollama would otherwise inject OLLAMA_PORT=tcp://... into this pod.
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.40.15-rocm
+          imagePullPolicy: IfNotPresent
+          # Serve, pull the embedding model once the server answers, then keep serving.
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              ollama serve & server=$!
+              until ollama list >/dev/null 2>&1; do sleep 1; done
+              ollama pull nomic-embed-text
+              wait "$server"
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0:11434"
+            - name: OLLAMA_MODELS
+              value: /models
+            - name: HOME
+              value: /tmp
+          ports:
+            - name: http
+              containerPort: 11434
+          # Ready only once the model is pulled; the indexer also waits for it.
+          readinessProbe:
+            exec:
+              command: ["ollama", "show", "nomic-embed-text"]
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: models
+              mountPath: /models
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: models
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: ollama
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: http
+---
+# Ollama accepts the api and the indexer, and may reach the public internet on 443 only to
+# pull the model.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ollama
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ollama
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: indexer
+      ports:
+        - protocol: TCP
+          port: 11434
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ollama-incluster-egress
+  namespace: rahbar
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [api, indexer]
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ollama
+      ports:
+        - protocol: TCP
+          port: 11434

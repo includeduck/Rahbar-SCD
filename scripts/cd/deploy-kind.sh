@@ -10,7 +10,8 @@
 # Needs: docker, kind, kubectl, kustomize, curl, python3 (or set PYTHON).
 #
 # Optional environment: CLUSTER (rahbar-cd), INGRESS_PORT (80), WORK_DIR (a temp dir),
-# OVERLAY (smoke: prod's images and objects, with stubs, since kind has no Ollama),
+# OVERLAY (smoke: prod with stubs, since kind has no Ollama; ci: real retrieval over the
+# fixtures with an in-cluster Ollama, for e2e-eval), JOB_TIMEOUT (900s),
 # KEEP_CLUSTER=1 to leave the cluster running afterwards.
 set -euo pipefail
 
@@ -19,6 +20,7 @@ TAG=${2:?image tag: the commit SHA, never latest}
 CLUSTER=${CLUSTER:-rahbar-cd}
 INGRESS_PORT=${INGRESS_PORT:-80}
 OVERLAY=${OVERLAY:-smoke}
+JOB_TIMEOUT=${JOB_TIMEOUT:-900s}
 PYTHON=${PYTHON:-python3}
 INGRESS_NGINX=controller-v1.15.1
 NS=rahbar
@@ -111,7 +113,7 @@ for attempt in 1 2 3 4 5 6; do
 done
 
 step "wait for the indexer Job and every rollout"
-kubectl -n "$NS" wait --for=condition=complete job/indexer --timeout=600s
+kubectl -n "$NS" wait --for=condition=complete job/indexer --timeout="$JOB_TIMEOUT"
 kubectl -n "$NS" rollout status statefulset/chroma --timeout=300s
 for deploy in redis api ui; do
   kubectl -n "$NS" rollout status "deployment/$deploy" --timeout=300s
