@@ -3,8 +3,8 @@
 #   api    <- ingress controller, ui
 #   chroma <- api, indexer        (the ui can NOT reach chroma)
 #   redis  <- api
-# plus DNS for everyone. Egress to things outside the cluster (Ollama on the laptop, the
-# university website) depends on the environment, so the overlays add it.
+# plus DNS for everyone, and HTTP(S) from the indexer to the public internet for the corpus
+# fetch (nu.edu.pk). Egress to Ollama depends on where it runs, so the overlays add it.
 # Needs a CNI that enforces policy: minikube must be started with --cni=calico.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -162,3 +162,17 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+    # The fetch-corpus initContainer downloads from nu.edu.pk. Public addresses only: the
+    # private ranges are excluded, so this cannot be used to reach other cluster services.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

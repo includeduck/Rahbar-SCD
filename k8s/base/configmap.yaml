@@ -8,15 +8,16 @@ metadata:
   labels:
     app.kubernetes.io/part-of: rahbar
 data:
-  # Which implementations the api loads. Phase 3 runs on the starter kit's stubs; phase 8
-  # switches these to chroma and ollama-host.
-  RETRIEVER: "stub"
-  LLM_PROVIDER: "stub"
+  # Which implementations the api loads: the real retriever over Chroma, and Ollama on the
+  # host for generation. (The smoke overlay that CD deploys switches both back to stubs,
+  # because its throwaway kind cluster has no model.)
+  RETRIEVER: "chroma"
+  LLM_PROVIDER: "ollama-host"
   LLM_MODEL: "llama3.2:3b"
 
-  # The pin. The dummy index records "dummy-768"; phase 7 changes this to nomic-embed-text
-  # and re-indexes (changing it first, without re-indexing, is the section 4.4 demo).
-  EMBED_MODEL: "dummy-768"
+  # The pin: the indexer embeds with this model and records it in the collection; the api
+  # embeds questions with it and refuses to become ready if the collection disagrees.
+  EMBED_MODEL: "nomic-embed-text"
 
   # Vector store and cache addresses: the ClusterIP Services in this namespace.
   CHROMA_HOST: "chroma"
@@ -27,15 +28,21 @@ data:
   OLLAMA_URL: "http://host.minikube.internal:11434"
 
   # Retrieval and generation. Placeholders until phase 11 measures them.
+  # TOP_K passages are retrieved and returned (recall@5); only the best MAX_CONTEXT_PASSAGES
+  # go into the prompt, because a laptop CPU reads prompts at ~30 tokens/s.
   TOP_K: "5"
+  MAX_CONTEXT_PASSAGES: "3"
+  # Per generation attempt; a question can take two attempts, so the Ingress allows 300 s.
+  LLM_TIMEOUT_SECONDS: "120"
   RELEVANCE_FLOOR: "0.50"
   CACHE_THRESHOLD: "0.95"
   # Facts and JSON need low randomness; 0 still cannot fix knowledge the corpus lacks.
   TEMPERATURE: "0.1"
 
-  # Indexer chunking, in tokens. Placeholders until phase 11 measures three settings.
+  # Indexer chunking, in words. Placeholders until phase 11 measures three settings.
   CHUNK_SIZE: "400"
   CHUNK_OVERLAP: "50"
+  # The Job's fetch-corpus initContainer downloads the documents here (the corpus-data PVC).
   CORPUS_DIR: "/corpus"
 
   LOG_LEVEL: "INFO"

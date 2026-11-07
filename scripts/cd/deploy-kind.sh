@@ -10,6 +10,7 @@
 # Needs: docker, kind, kubectl, kustomize, curl, python3 (or set PYTHON).
 #
 # Optional environment: CLUSTER (rahbar-cd), INGRESS_PORT (80), WORK_DIR (a temp dir),
+# OVERLAY (smoke: prod's images and objects, with stubs, since kind has no Ollama),
 # KEEP_CLUSTER=1 to leave the cluster running afterwards.
 set -euo pipefail
 
@@ -17,6 +18,7 @@ PREFIX=${1:?image prefix, e.g. docker.io/alice}
 TAG=${2:?image tag: the commit SHA, never latest}
 CLUSTER=${CLUSTER:-rahbar-cd}
 INGRESS_PORT=${INGRESS_PORT:-80}
+OVERLAY=${OVERLAY:-smoke}
 PYTHON=${PYTHON:-python3}
 INGRESS_NGINX=controller-v1.15.1
 NS=rahbar
@@ -84,8 +86,9 @@ kubectl apply -f "https://raw.githubusercontent.com/kubernetes/ingress-nginx/$IN
 kubectl -n ingress-nginx wait --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller --timeout=240s
 
-step "render the prod overlay with images pinned to $TAG"
+step "render the $OVERLAY overlay with images pinned to $TAG"
 cp -r "$ROOT/k8s" "$WORK/"
+# The image pins live in the prod overlay; smoke builds on top of it.
 (
   cd "$WORK/k8s/overlays/prod"
   kustomize edit set image \
@@ -93,7 +96,7 @@ cp -r "$ROOT/k8s" "$WORK/"
     "rahbar-ui=$PREFIX/rahbar-ui:$TAG" \
     "rahbar-indexer=$PREFIX/rahbar-indexer:$TAG"
 )
-kustomize build "$WORK/k8s/overlays/prod" > "$WORK/rendered.yaml"
+kustomize build "$WORK/k8s/overlays/$OVERLAY" > "$WORK/rendered.yaml"
 if grep -E '^\s+image: .*(:latest|:set-by-cd)\s*$' "$WORK/rendered.yaml"; then
   echo "refusing to deploy an image that is not pinned to $TAG"; exit 1
 fi

@@ -1,0 +1,44 @@
+# What cd.yml deploys to its throwaway kind cluster: the prod overlay (same images, pinned
+# to the commit SHA, same objects and policies), but with the starter kit's stub retriever
+# and model and the dummy index, because that cluster has no Ollama. It also skips the
+# corpus download, so CD does not fetch from the university website on every merge.
+#   kustomize build k8s/overlays/smoke
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../prod
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: rahbar-config
+    patch: |-
+      - op: replace
+        path: /data/RETRIEVER
+        value: stub
+      - op: replace
+        path: /data/LLM_PROVIDER
+        value: stub
+      - op: replace
+        path: /data/EMBED_MODEL
+        value: dummy-768
+  # initContainers/0 is fetch-corpus; wait-for-chroma stays.
+  - target:
+      kind: Job
+      name: indexer
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/initContainers/0
+      - op: replace
+        path: /spec/template/spec/containers/0/args
+        value: ["python", "-m", "pipeline.run", "--dummy"]
+  - target:
+      kind: CronJob
+      name: reindex
+    patch: |-
+      - op: remove
+        path: /spec/jobTemplate/spec/template/spec/initContainers/0
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/args
+        value: ["python", "-m", "pipeline.run", "--dummy"]

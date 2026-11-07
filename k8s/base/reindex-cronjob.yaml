@@ -33,9 +33,33 @@ spec:
             runAsNonRoot: true
             runAsUser: 10001
             runAsGroup: 10001
+            fsGroup: 10001
             seccompProfile:
               type: RuntimeDefault
           initContainers:
+            - name: fetch-corpus
+              image: rahbar-indexer
+              imagePullPolicy: IfNotPresent
+              command:
+                - sh
+                - -c
+                - python /app/corpus/fetch.py --out /corpus && python /app/corpus/fetch.py --out /corpus --verify
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: corpus
+                  mountPath: /corpus
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
             - name: wait-for-chroma
               image: rahbar-indexer
               imagePullPolicy: IfNotPresent
@@ -75,7 +99,7 @@ spec:
             - name: indexer
               image: rahbar-indexer
               imagePullPolicy: IfNotPresent
-              args: ["python", "-m", "pipeline.run", "--dummy"]
+              args: ["python", "-m", "pipeline.run"]
               envFrom:
                 - configMapRef:
                     name: rahbar-config
@@ -87,6 +111,9 @@ spec:
                   cpu: "2"
                   memory: 2Gi
               volumeMounts:
+                - name: corpus
+                  mountPath: /corpus
+                  readOnly: true
                 - name: tmp
                   mountPath: /tmp
               securityContext:
@@ -96,5 +123,8 @@ spec:
                   drop:
                     - ALL
           volumes:
+            - name: corpus
+              persistentVolumeClaim:
+                claimName: corpus-data
             - name: tmp
               emptyDir: {}
