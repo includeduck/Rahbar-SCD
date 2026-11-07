@@ -1,0 +1,76 @@
+{
+  "recall_3": 1.0,
+  "recall_5": 1.0,
+  "citation_validity": 1.0,
+  "abstention_correctness": 1.0,
+  "per_type": {
+    "ordinary": 1.0,
+    "version": 1.0,
+    "exact": 1.0,
+    "injection": 1.0
+  },
+  "per_question": [
+    {
+      "id": "f01",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 2.13
+    },
+    {
+      "id": "f02",
+      "type": "version",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 0.2
+    },
+    {
+      "id": "f03",
+      "type": "version",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 0.27
+    },
+    {
+      "id": "f04",
+      "type": "exact",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 0.21
+    },
+    {
+      "id": "f05",
+      "type": "abstain",
+      "must_abstain": true,
+      "recall_3": null,
+      "recall_5": null,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "seconds": 0.21
+    },
+    {
+      "id": "f06",
+      "type": "injection",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 0.27
+    }
+  ],
+  "golden": "eval\\fixtures\\golden.fixture.yaml",
+  "questions": 6
+}

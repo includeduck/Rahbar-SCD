@@ -1,0 +1,70 @@
+# What ci.yml's e2e-eval job deploys to kind: the prod overlay with real retrieval over the
+# CI fixture corpus (eval/fixtures, baked into the indexer image), embeddings from an
+# in-cluster Ollama, and the stub LLM (generation is not what the gate measures, and a chat
+# model would make CI slow and non-deterministic).
+#   kustomize build k8s/overlays/ci
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../prod
+  - ollama.yaml
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: rahbar-config
+    patch: |-
+      - op: replace
+        path: /data/LLM_PROVIDER
+        value: stub
+      - op: replace
+        path: /data/OLLAMA_URL
+        value: http://ollama:11434
+      - op: replace
+        path: /data/CORPUS_DIR
+        value: /app/fixtures
+      # With the stub LLM, only the floor can decline. Measured with nomic-embed-text on the
+      # fixtures: answerable questions score 0.680 to 0.818, the hostel question 0.500.
+      - op: replace
+        path: /data/RELEVANCE_FLOOR
+        value: "0.60"
+  # initContainers/0 is fetch-corpus. The fixtures are in the image, so turn it into a wait
+  # for the in-cluster model instead. It is edited in place (not replaced) so it keeps the
+  # image the prod overlay pinned to the commit SHA.
+  - target:
+      kind: Job
+      name: indexer
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/initContainers/0/name
+        value: wait-for-embedding-model
+      - op: replace
+        path: /spec/template/spec/initContainers/0/command
+        value:
+          - python
+          - -c
+          - |
+            import os, time, httpx
+            url, model = os.environ["OLLAMA_URL"] + "/api/embed", os.environ["EMBED_MODEL"]
+            for attempt in range(180):
+                try:
+                    httpx.post(url, json={"model": model, "input": ["ping"]}, timeout=10).raise_for_status()
+                    print(f"{model} is ready", flush=True)
+                    break
+                except Exception as exc:
+                    print(f"waiting for {model} ({attempt}): {exc}", flush=True)
+                    time.sleep(5)
+            else:
+                raise SystemExit(f"{model} did not become ready in 15 minutes")
+      - op: add
+        path: /spec/template/spec/initContainers/0/envFrom
+        value:
+          - configMapRef:
+              name: rahbar-config
+  - target:
+      kind: CronJob
+      name: reindex
+    patch: |-
+      - op: remove
+        path: /spec/jobTemplate/spec/template/spec/initContainers/0

@@ -42,7 +42,7 @@ able to explain every part in a viva.
 | 7 | [Indexing pipeline](#phase-7-indexing-pipeline) | Zain (+ Wasay for the corpus volume) | Wed 4 – Sat 7 | ✅ Done: real index on minikube |
 | 8 | [Query pipeline and generation](#phase-8-query-pipeline-and-generation) | Zain | Thu 5 – Sat 7 | ✅ Done: real answers on minikube |
 | 9 | [Semantic cache and metrics](#phase-9-semantic-cache-and-metrics) | Zain (+ Wasay for Redis) | Fri 6 | ✅ Code complete |
-| 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ⏳ CD written and tested locally; e2e-eval waits on phases 6–7 |
+| 10 | [End-to-end eval in CI, and CD](#phase-10-end-to-end-eval-in-ci-and-cd) | Wasay | Thu 5 – Sat 7 | ✅ CD green on `main`; `e2e-eval` added (gate demo left) |
 | 11 | [Measurement and failure analysis](#phase-11-measurement-and-failure-analysis) | Both | Sat 7 | ⬜ |
 | 12 | [Documentation and evidence](#phase-12-documentation-and-evidence) | Both | Rolling, finish Sun 8 | ⬜ |
 | 13 | [Submission](#phase-13-submission) | Both | Sun 8, by 20:00 | ⬜ |
@@ -330,9 +330,15 @@ Files: `api/app/services/cache.py`, `api/app/routes/metrics.py`, `api/app/routes
 
 **Owner:** Wasay · **When:** Thu 5 – Sat 7 · (§5.4, §6)
 
-- [ ] `e2e-eval` job: kind cluster, apply the CI overlay, run the indexer Job on the fixture
-      corpus, wait for rollout, run `eval/run_eval.py`, enforce the gate
-  - Embeddings in CI: in-cluster Ollama with only `nomic-embed-text`, `LLM_PROVIDER=stub`
+- [x] `e2e-eval` job in `ci.yml` (needs `test` and `manifests`): kind cluster, the
+      `k8s/overlays/ci` overlay, the indexer Job on the fixture corpus, rollouts, smoke test,
+      then `eval/run_eval.py` against `eval/fixtures/baseline.fixture.json`; its exit code is
+      the gate. Run end to end on local kind 7 Nov: 24 chunks, recall@5 1.00, abstention 1.00;
+      with the floor broken (0.40) the gate failed with exit 1 as it should
+  - Embeddings in CI: in-cluster Ollama (`ollama/ollama:0.40.15-rocm`, 1.46 GB, CPU) pulling
+    only `nomic-embed-text`; `LLM_PROVIDER=stub`; `RELEVANCE_FLOOR` 0.60 from measured fixture
+    scores (answerable 0.680 to 0.818, the hostel question 0.500)
+- [ ] **Wasay:** add `e2e-eval` to the required checks in the `main` ruleset after its first run
 - [x] [`cd.yml`](.github/workflows/cd.yml) on push to `main` (and by hand): `test` →
       `build-push` (needs `test`; Trivy on the exact images, then push to Docker Hub tagged
       with the commit SHA only) → `deploy` (needs `build-push`; runs
