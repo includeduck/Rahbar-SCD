@@ -61,7 +61,7 @@ During the 15 to 40 seconds required for the LLM to generate an answer, the API 
 
 During the real indexer Job run on minikube ([`docs/evidence/kubectl-top-indexer.txt`](evidence/kubectl-top-indexer.txt) and [`docs/evidence/real-pipeline-first-run.txt`](evidence/real-pipeline-first-run.txt#L38-L46)):
 
-- **Peak memory observed:** **712 MiB** (sampled via `kubectl -n rahbar top pod -l app.kubernetes.io/name=indexer --containers` at timestamps `16:53:50` through `16:54:21` UTC).
+- **Peak memory observed:** **712 MiB** (sampled via `kubectl top`: `kubectl top pod -l app.kubernetes.io/name=indexer -n rahbar --containers` at timestamps `16:53:50` through `16:54:21` UTC).
   - *Source of peak:* Rendering 24 scanned PDF pages of `undergraduate-academic-rules-aug-2023.pdf` into 200 DPI greyscale images using `pdf2image` and holding image buffers in memory for `pytesseract` OCR processing.
 - **Configured limit:** **2 GiB** (`2048 MiB`) in [`k8s/base/indexer-job.yaml`](../k8s/base/indexer-job.yaml#L115) (`resources.limits.memory: 2Gi`).
 - **Safety margin:** $2048\,\text{MiB} - 712\,\text{MiB} = 1336\,\text{MiB}$ of headroom (a $2.87\times$ safety factor / $65\%$ margin).
