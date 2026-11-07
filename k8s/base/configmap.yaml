@@ -35,7 +35,9 @@ data:
   # Per generation attempt; a question can take two attempts, so the Ingress allows 300 s.
   LLM_TIMEOUT_SECONDS: "120"
   RELEVANCE_FLOOR: "0.50"
-  CACHE_THRESHOLD: "0.95"
+  # Measured (eval/cache_threshold.py, docs/evidence/cache-threshold.txt): 0.95 let two
+  # different questions hit; 0.96 is the lowest with none; 0.97 keeps a margin above them.
+  CACHE_THRESHOLD: "0.97"
   # Facts and JSON need low randomness; 0 still cannot fix knowledge the corpus lacks.
   TEMPERATURE: "0.1"
 

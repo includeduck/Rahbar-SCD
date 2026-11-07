@@ -15,7 +15,7 @@ Repeated queries (e.g. "What is the passing CGPA?", "What is the fee per credit 
 
 We implement a **Redis-backed semantic cache** (`api/app/services/cache.py`):
 
-1. **Store:** We deploy Redis as a standalone Deployment with persistent storage (`k8s/base/redis.yaml`, `redis:7.4-alpine`, PVC `cache-data` mounted at `/data` with `appendonly yes`). Redis provides native key-level TTL expiration (`setex`, 86,400 s / 24 h) and atomic set operations (`sadd`, `smembers`).
+1. **Store:** We deploy Redis as a standalone Deployment with persistent storage (`k8s/base/redis.yaml`, `redis:7.4.7-alpine`, PVC `cache-data` mounted at `/data` with `appendonly yes`). Redis provides native key-level TTL expiration (`setex`, 86,400 s / 24 h) and atomic set operations (`sadd`, `smembers`).
 2. **Generation-namespaced keys (Plan D2):** Every cache entry is namespaced by the active Chroma index generation read from the `rahbar-active` pointer collection:
    `cache:<generation>:<entry_id>`
    `cache_index:<generation>` (Redis set of entry keys for the active generation)
@@ -29,21 +29,32 @@ We implement a **Redis-backed semantic cache** (`api/app/services/cache.py`):
 
 ## Threshold evaluation
 
-We evaluated three candidate similarity thresholds against question variants and adjacent topics:
+Measured with [`eval/cache_threshold.py`](../../eval/cache_threshold.py) against nomic-embed-text on host Ollama; the full output is in [`docs/evidence/cache-threshold.txt`](../evidence/cache-threshold.txt). Ten paraphrase pairs should hit; ten similar-but-different pairs must not.
 
-| Threshold | Hit rate on paraphrases | False positive observed | Verdict |
-| --- | --- | --- | --- |
-| 0.99 | Low (< 15%) | None (exact wording matches only) | Rejected: too strict; fails on simple synonym variations. |
-| **0.95** | **Optimal (~80%)** | **None** | **Accepted (Shipped): hits genuine paraphrases reliably with zero cross-policy bleeding.** |
-| 0.85 | High (> 95%) | `"What is academic warning?"` matched `"What is the grading policy?"` (cosine 0.88) | Rejected: severe false hit; returned wrong cached answer for warning query. |
+| Threshold | Paraphrase hits | False hits | Verdict |
+| --- | ---: | ---: | --- |
+| 0.85 | 9/10 | 2/10 | Rejected: false hits (below). |
+| 0.90 | 5/10 | 2/10 | Rejected: the same two false hits. |
+| 0.95 | 3/10 | 2/10 | Rejected. This was our placeholder until we measured it. |
+| 0.96 | 3/10 | 0/10 | Lowest threshold with no false hit, but only 0.007 above the worst one. |
+| **0.97** | **1/10** | **0/10** | **Shipped** (`CACHE_THRESHOLD` in `k8s/base/configmap.yaml`). |
+| 0.99 | 0/10 | 0/10 | Rejected: the cache would never hit. |
+
+The false hits that ruled out 0.95 are the dangerous kind, because one word changes the answer:
+
+- "Can a student register for **more than five** courses in a semester?" vs "... **fewer than three** courses ..." scored **0.953**.
+- "What does clause **1.21** ... require?" vs "What does clause **1.22** ... require?" scored **0.951**.
+
+A cache miss costs one LLM call; a false hit serves the wrong policy with citations that look valid. So we take 0.97, one step above the lowest safe value, and accept that the cache mostly catches near-identical wording (the fee-per-credit-hour pair at 0.979). The paraphrases it misses, such as "academic warning CGPA threshold" (0.883), go to the LLM as normal. Ten pairs per side is a small sample; the script stays in the repo so the threshold can be re-measured whenever `EMBED_MODEL` changes.
 
 ## Consequences
 
 - **What this makes easier:**
   - Zero-downtime cache invalidation: re-indexing flips the Chroma pointer and immediately decouples the cache from outdated answers without requiring Redis flush commands or pod restarts.
-  - Sub-millisecond response latency: cache hits return in ~0.1 s with `X-Cache: hit` header.
+  - A cache hit skips retrieval ranking and the LLM call (15–40 s on our CPU) and is marked with the `X-Cache: hit` header.
   - Strict preservation of the one-writer rule on ChromaDB.
 - **What this makes harder:**
-  - Brute-force cosine comparison across cached vectors runs in memory in Python. At our cluster scale (hundreds of questions per generation), this overhead is negligible (< 2 ms).
+  - Brute-force cosine comparison across cached vectors runs in memory in Python. At our scale (hundreds of cached questions per generation) this is small next to the embedding call that every question already makes; we have not profiled it separately.
 - **What we watch for:**
+  - Re-run `eval/cache_threshold.py` after any change of `EMBED_MODEL`: cosine values are model-specific.
   - If question volume grows into tens of thousands of cached queries per generation, Redis vector search (RediSearch) or HNSW indexing should be considered.
