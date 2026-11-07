@@ -16,22 +16,22 @@ def ask(body: AskRequest, request: Request) -> JSONResponse:
     state = request.app.state
     cache = getattr(state, "cache", None)
 
-    # Check cache first for X-Cache header
-    if cache is not None and not cache.should_skip_cache(body.question):
-        cached = cache.get(body.question)
-        if cached is not None:
-            from ..logjson import request_id_var
-            cached.request_id = request_id_var.get()
-            return JSONResponse(
-                content=cached.model_dump(),
-                headers={"X-Cache": "hit"},
-            )
+    # Embed the question once — reused by both cache lookup and retrieval
+    query_vec: list[float] | None = None
+    if cache is not None:
+        try:
+            retriever = state.retriever
+            if hasattr(retriever, "_embed_query"):
+                query_vec = retriever._embed_query(body.question)
+        except Exception:
+            pass  # if embedding fails, skip cache; retriever will retry
 
-    response = answer_question(
-        body.question, state.retriever, state.provider, state.settings, cache=cache,
+    response, was_cache_hit = answer_question(
+        body.question, state.retriever, state.provider, state.settings,
+        cache=cache, query_vec=query_vec,
     )
 
     return JSONResponse(
         content=response.model_dump(),
-        headers={"X-Cache": "miss"},
+        headers={"X-Cache": "hit" if was_cache_hit else "miss"},
     )

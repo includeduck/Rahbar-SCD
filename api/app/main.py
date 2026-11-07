@@ -40,7 +40,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.chroma_http = chroma_http_client(settings)
     app.state.redis = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=1,
                                            socket_timeout=1)
-    app.state.cache = SemanticCache(app.state.redis, settings)
+    # Only build cache if we have a real retriever (stub tests run offline)
+    if settings.retriever != "stub":
+        app.state.cache = SemanticCache(app.state.redis, settings)
+    else:
+        app.state.cache = None
     # This process only reads the index. The indexer Job writes it.
     log.info(
         "api started",
