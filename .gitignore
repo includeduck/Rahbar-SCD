@@ -31,3 +31,6 @@ venv/
 # Test coverage output
 .coverage
 htmlcov/
+
+# VSCODE files
+.vscode/

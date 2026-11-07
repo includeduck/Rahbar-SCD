@@ -20,6 +20,7 @@ import httpx
 from ..config import Settings
 
 COLLECTIONS = "/api/v2/tenants/default_tenant/databases/default_database/collections"
+POINTER_COLLECTION = "rahbar-active"
 TIMEOUT_SECONDS = 2.0
 
 
@@ -34,6 +35,7 @@ class Readiness:
 
     @property
     def ready(self) -> bool:
+        # ready when no check failed (collection count() > 0, embed_model matches, redis ping ok)
         return self.failed is None
 
     def fail(self, name: str, reason: str) -> Readiness:
@@ -72,15 +74,28 @@ def check_chroma(http: httpx.Client, settings: Settings, result: Readiness) -> R
         return result.fail("chroma", f"unreachable: {type(exc).__name__}")
     result.checks["chroma"] = "ok"
 
-    response = http.get(f"{COLLECTIONS}/{settings.collection}")
+    # Resolve the active collection via the pointer, falling back to
+    # settings.collection for backward compat with the dummy indexer.
+    collection_name = settings.collection
+    try:
+        pointer_resp = http.get(f"{COLLECTIONS}/{POINTER_COLLECTION}")
+        if pointer_resp.status_code == 200:
+            pointer_meta = pointer_resp.json().get("metadata") or {}
+            active = pointer_meta.get("active")
+            if active and isinstance(active, str):
+                collection_name = active
+    except httpx.HTTPError:
+        pass  # fall back to settings.collection
+
+    response = http.get(f"{COLLECTIONS}/{collection_name}")
     if response.status_code == 404:
-        return result.fail("collection", f"{settings.collection!r} does not exist yet; "
+        return result.fail("collection", f"{collection_name!r} does not exist yet; "
                                          f"run the indexer Job")
     response.raise_for_status()
     collection = response.json()
     count = int(http.get(f"{COLLECTIONS}/{collection['id']}/count").json())
     if count == 0:
-        return result.fail("collection", f"{settings.collection!r} is empty")
+        return result.fail("collection", f"{collection_name!r} is empty")
     result.checks["collection"] = f"ok ({count} chunks)"
 
     conflict = pin_conflict(collection.get("metadata") or {}, settings)
@@ -100,7 +115,8 @@ def check_redis(redis_client: Pingable, result: Readiness) -> Readiness:
 
 
 def check_readiness(http: httpx.Client, redis_client: Pingable, settings: Settings) -> Readiness:
-    """Run every check, even after one fails, so the response lists them all."""
+    """Run every check, even after one fails, so the response lists them all.
+    Checks chroma connection, non-empty collection (count() > 0), embed model pin, and redis."""
     result = Readiness()
     try:
         check_chroma(http, settings, result)

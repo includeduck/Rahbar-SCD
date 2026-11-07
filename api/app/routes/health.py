@@ -28,7 +28,7 @@ def readyz(request: Request, response: Response) -> dict[str, object]:
     state = request.app.state
     result = check_readiness(state.chroma_http, state.redis, state.settings)
     report_change(state, result)
-    if not result.ready:
+    if not result.ready or len(result.checks) == 0:
         response.status_code = 503
         return {"status": "not ready", "failed": result.failed, "checks": result.checks}
     return {"status": "ready", "checks": result.checks}
