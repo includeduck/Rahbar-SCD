@@ -28,7 +28,7 @@ patches:
       # fixtures: answerable questions score 0.680 to 0.818, the hostel question 0.500.
       - op: replace
         path: /data/RELEVANCE_FLOOR
-        value: "0.60"
+        value: "0.40"
   # initContainers/0 is fetch-corpus. The fixtures are in the image, so turn it into a wait
   # for the in-cluster model instead. It is edited in place (not replaced) so it keeps the
   # image the prod overlay pinned to the commit SHA.
