@@ -12,12 +12,13 @@ stored embeddings via cosine similarity. A hit requires similarity ≥ the
 Never-cache rules: abstentions, fallbacks, follow-ups, and ungrounded
 answers are never stored.
 
-Threshold: ``CACHE_THRESHOLD`` (ConfigMap, currently 0.95) is a placeholder,
-not yet measured. Phase 11 tunes it with data: pairs of paraphrased questions
-that should hit and similar-but-different questions that must not, embedded
-with the pinned model; the shipped value is the lowest threshold with zero
-false hits. The thresholds tried and the false hit that ruled one out go in
-docs/PIPELINE.md, with the script and its output committed.
+Threshold: ``CACHE_THRESHOLD`` (ConfigMap, 0.97) was measured by
+eval/cache_threshold.py: ten paraphrase pairs that should hit and ten
+similar-but-different pairs that must not, embedded with the pinned model.
+At 0.95, "more than five courses" vs "fewer than three courses" (0.953) and
+"clause 1.21" vs "clause 1.22" (0.951) were false hits. 0.96 is the lowest
+threshold with none; 0.97 keeps one step of margin above them. Output in
+docs/evidence/cache-threshold.txt, decision in docs/adr/0003.
 """
 
 from __future__ import annotations

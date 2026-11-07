@@ -50,7 +50,7 @@ class Settings:
     relevance_floor: float = 0.25
 
     # Semantic cache: a hit needs cosine similarity >= this. Placeholder until phase 11.
-    cache_threshold: float = 0.95
+    cache_threshold: float = 0.97
 
     log_level: str = "INFO"
 
@@ -73,6 +73,6 @@ def get_settings() -> Settings:
         hosted_base_url=os.environ.get("HOSTED_BASE_URL", ""),
         llm_api_key=os.environ.get("LLM_API_KEY", ""),
         relevance_floor=_float("RELEVANCE_FLOOR", 0.25),
-        cache_threshold=_float("CACHE_THRESHOLD", 0.95),
+        cache_threshold=_float("CACHE_THRESHOLD", 0.97),
         log_level=os.environ.get("LOG_LEVEL", "INFO"),
     )
