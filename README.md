@@ -16,12 +16,13 @@ superseded one, and says so when the documents do not cover the question.
 SE3005 Software Construction and Development, Assignment 02 · Muhammad Wasay Tariq and
 Muhammad Zain Bin Jabir.
 
-> **Status, 7 November 2026.** The full pipeline runs on minikube: the indexer Job
+> **Status, 8 November 2026.** The full pipeline runs on minikube: the indexer Job
 > downloads and verifies the nine documents, OCRs the scanned ones and builds a 710-chunk
 > index; the api answers with citations, declines the hostel questions and serves repeats
 > from the semantic cache ([`docs/evidence/real-pipeline-first-run.txt`](docs/evidence/real-pipeline-first-run.txt)).
-> Still to come: the measured evaluation baseline and tuning (chunking, relevance floor,
-> cache threshold), the `e2e-eval` CI job, and the remaining docs.
+> Measured evaluation baseline and tuning (chunking configurations, relevance floor,
+> cache threshold sweep), failure analyses across 5 stages, architecture decision records
+> (ADRs 0001–0004), engineering notes, and the `e2e-eval` CI gate are complete.
 > Progress: [`PHASES.md`](PHASES.md).
 
 ## Architecture
@@ -234,7 +235,7 @@ any must-abstain question is answered, or when citation validity drops below 95 
 
 | Workflow | Runs on | Jobs |
 | --- | --- | --- |
-| [`ci.yml`](.github/workflows/ci.yml) | pull requests to `main`, pushes to `dev` | `lint` (ruff, mypy), `test` (pytest, coverage ≥ 60 %), `manifests` (kubeconform `-strict`), `build` (no push), `scan` (Trivy) |
+| [`ci.yml`](.github/workflows/ci.yml) | pull requests to `main`, pushes to `dev` | `lint` (ruff, mypy), `test` (pytest, coverage ≥ 60 %), `manifests` (kubeconform `-strict`), `build` (no push), `scan` (Trivy), `e2e-eval` (in-cluster Ollama, fixture corpus, eval gate) |
 | [`cd.yml`](.github/workflows/cd.yml) | pushes to `main` | `test` → `build-push` (Docker Hub, tagged with the commit SHA) → `deploy` (kind, rollout status, smoke test through the Ingress) |
 
 - A green CD run on `main`: [run 42171972687](https://github.com/includeduck/Rahbar-SCD/actions/runs/42171972687)
@@ -250,7 +251,9 @@ Work happens on `dev`.
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Objects, the two paths, probes, network, security, delivery |
 | [`docs/CORPUS.md`](docs/CORPUS.md) | The nine documents and the seven required properties |
 | [`docs/PIPELINE.md`](docs/PIPELINE.md) | The indexing stages and chunking measurements |
-| [`docs/adr/`](docs/adr) | Architecture decision records |
-| [`docs/evidence/`](docs/evidence) | Command output behind every claim: NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion |
+| [`docs/FAILURE-ANALYSIS.md`](docs/FAILURE-ANALYSIS.md) | Failure injection and recovery across extraction, chunking, retrieval, generation, and superseded filtering |
+| [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md) | Detailed answers to the seven engineering and scaling case study questions with exact file paths and line numbers |
+| [`docs/adr/`](docs/adr) | Architecture decision records (ADRs 0001–0004) |
+| [`docs/evidence/`](docs/evidence) | Command output behind every claim: NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile |
 | [`docs/AI-USAGE.md`](docs/AI-USAGE.md) | Which AI tools wrote or shaped what, and what we changed |
 | [`PHASES.md`](PHASES.md) | The plan, phase by phase, with what is done |

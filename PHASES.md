@@ -383,17 +383,17 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 
 ## Phase 12: Documentation and evidence
 
-**Owner:** both, written as we go · **Finish:** Sun 8 · (§7, §10)
+**Owner:** both, written as we go · **Finish:** Sun 8 · (§7, §10) · **Status:** ✅ Done
 
-- [ ] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
+- [x] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
       → answered question, API endpoint table, screenshot (−5 if the apply order fails)
 - [x] `docs/ARCHITECTURE.md` (why Chroma is a StatefulSet)
 - [x] `docs/PIPELINE.md`, `docs/FAILURE-ANALYSIS.md`, final `docs/CORPUS.md`
 - [x] `docs/ENGINEERING-NOTES.md`: all 7 questions **with our file paths and line numbers**
       (generic answers score zero). Note the "failure that cost us an hour" when it happens
 - [x] ADRs 0001–0004
-- [ ] `docs/AI-USAGE.md` complete, including what we changed
-- [ ] `docs/evidence/` (≥ 5 files): ruleset, blocked merge, `kubectl top`,
+- [x] `docs/AI-USAGE.md` complete, including what we changed
+- [x] `docs/evidence/` (≥ 5 files): ruleset, blocked merge, `kubectl top`,
       `kubectl get endpoints`, `kubectl get hpa`, plus rollout/undo, pin demo, NetworkPolicy
       test, pod deletion, re-index without redeploy
 
