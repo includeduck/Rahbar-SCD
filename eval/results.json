@@ -1,0 +1,196 @@
+{
+  "recall_3": 0.5625,
+  "recall_5": 0.625,
+  "citation_validity": 1.0,
+  "abstention_correctness": 1.0,
+  "per_type": {
+    "ordinary": 0.7,
+    "version": 0.3333,
+    "exact": 0.5,
+    "injection": 1.0
+  },
+  "per_question": [
+    {
+      "id": "q01",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 29.3
+    },
+    {
+      "id": "q02",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 17.4
+    },
+    {
+      "id": "q03",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 42.23
+    },
+    {
+      "id": "q04",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 0.5,
+      "recall_5": 0.5,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 51.87
+    },
+    {
+      "id": "q05",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 0.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 43.06
+    },
+    {
+      "id": "q06",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 0.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 21.79
+    },
+    {
+      "id": "q07",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 25.48
+    },
+    {
+      "id": "q08",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 57.55
+    },
+    {
+      "id": "q09",
+      "type": "version",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 0.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 30.99
+    },
+    {
+      "id": "q10",
+      "type": "version",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 23.37
+    },
+    {
+      "id": "q11",
+      "type": "version",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 0.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 19.6
+    },
+    {
+      "id": "q12",
+      "type": "exact",
+      "must_abstain": false,
+      "recall_3": 0.0,
+      "recall_5": 0.0,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "seconds": 11.02
+    },
+    {
+      "id": "q13",
+      "type": "exact",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": true,
+      "seconds": 20.07
+    },
+    {
+      "id": "q14",
+      "type": "abstain",
+      "must_abstain": true,
+      "recall_3": null,
+      "recall_5": null,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "seconds": 14.32
+    },
+    {
+      "id": "q15",
+      "type": "abstain",
+      "must_abstain": true,
+      "recall_3": null,
+      "recall_5": null,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "seconds": 42.68
+    },
+    {
+      "id": "q16",
+      "type": "injection",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 21.48
+    },
+    {
+      "id": "q17",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 1.0,
+      "recall_5": 1.0,
+      "citation_validity": 1.0,
+      "answered_from_context": false,
+      "seconds": 25.96
+    },
+    {
+      "id": "q18",
+      "type": "ordinary",
+      "must_abstain": false,
+      "recall_3": 0.5,
+      "recall_5": 0.5,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "seconds": 13.98
+    }
+  ],
+  "golden": "eval\\golden.yaml",
+  "questions": 18
+}

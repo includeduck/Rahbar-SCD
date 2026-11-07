@@ -367,8 +367,10 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 - [ ] **Chunking:** at least 3 (size, overlap) settings, recall@5 for each, table in
       `docs/PIPELINE.md`, ADR 0002 for the one we ship (no measurement = zero on that line)
 - [ ] Relevance floor and cache threshold chosen from golden-set scores
-- [ ] Commit `eval/baseline.json` and `eval/results.json` (real corpus)
-- [ ] recall@3 and recall@5 by question type, and why exact-term recall is lower
+- [x] Commit `eval/baseline.json` and `eval/results.json` (real corpus): first live run 7 Nov,
+      recall@5 0.625, citation validity 1.00, abstention 1.00 (`docs/PIPELINE.md` §7)
+- [x] recall@3 and recall@5 by question type, and why exact-term recall is lower (§7: clause
+      numbers carry little meaning for embeddings; "clause 1.21" by number is missed)
 - [ ] Resource requests and limits set from **`kubectl top pods`** output (committed)
 - [ ] `docs/FAILURE-ANALYSIS.md`: break 4 stages one at a time (planned: A no OCR,
       B fixed 100-token chunks, C pin mismatch or `top_k: 1`, E no superseded filter)
