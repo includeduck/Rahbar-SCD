@@ -23,6 +23,8 @@ env:
   KUBECONFORM_VERSION: v0.6.7
   # The same scanner version we run locally, so local and CI results agree.
   TRIVY_IMAGE: aquasec/trivy:0.58.1
+  KIND_VERSION: v0.33.0
+  KUSTOMIZE_VERSION: v5.8.3
 
 jobs:
   lint:
@@ -121,3 +123,50 @@ jobs:
             echo "::endgroup::"
           done
           exit "${status}"
+
+  # The section 5.4 gate on a real stack: a kind cluster, the manifests, the indexer Job on
+  # the fixture corpus (eval/fixtures), real retrieval with nomic-embed-text from an
+  # in-cluster Ollama, then eval/run_eval.py against the committed fixture baseline. It fails
+  # when recall@5 drops more than 5 points, a must-abstain question is answered, or
+  # citation validity falls below 95 %. The LLM is the stub: the gate measures retrieval,
+  # abstention and citations, not the model's prose.
+  e2e-eval:
+    needs: [test, manifests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install the eval runner's dependencies
+        run: pip install httpx==0.28.1 pyyaml==6.0.2
+      # The runner image already has a root-owned kind in /usr/local/bin.
+      - name: Install kind and kustomize
+        run: |
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          curl -sSfLo "$bin/kind" "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x "$bin/kind"
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C "$bin" kustomize
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Build the images
+        run: |
+          docker build -t "local/rahbar-api:${GITHUB_SHA}" api
+          docker build -t "local/rahbar-ui:${GITHUB_SHA}" ui
+          docker build -t "local/rahbar-indexer:${GITHUB_SHA}" -f indexer/Dockerfile .
+      - name: Deploy the ci overlay to kind
+        env:
+          OVERLAY: ci
+          KEEP_CLUSTER: "1"
+        run: bash scripts/cd/deploy-kind.sh local "${GITHUB_SHA}"
+      - name: Evaluate and enforce the gate
+        run: |
+          python eval/run_eval.py --api http://localhost --host rahbar.local \
+            --golden eval/fixtures/golden.fixture.yaml \
+            --baseline eval/fixtures/baseline.fixture.json \
+            --out "${RUNNER_TEMP}/results.fixture.json"
+      - name: Show the results
+        if: always()
+        run: cat "${RUNNER_TEMP}/results.fixture.json" 2>/dev/null || echo "no results written"
