@@ -135,6 +135,43 @@ class TestPromptBuilder:
         assert "reasoning" in prompt
         assert "answered_from_context" in prompt
 
+    def test_prompt_does_not_repeat_the_json_schema(self) -> None:
+        """The providers enforce the schema; writing it out only costs prompt tokens."""
+        prompt = build_prompt("test?", [_passage()])
+        assert '"properties"' not in prompt and "$defs" not in prompt
+
+
+class TestContextPassages:
+    def _five_passages(self) -> list[Passage]:
+        return [_passage(score=0.9 - i / 10, source=f"doc{i}.pdf", section=f"{i}.1 Rule")
+                for i in range(5)]
+
+    def test_only_the_best_passages_reach_the_model_but_all_are_returned(self) -> None:
+        seen: list[list[Passage]] = []
+
+        class Recording(FakeProvider):
+            def generate(self, question: str, passages: list[Passage]) -> Answer:
+                seen.append(passages)
+                return _answer(citations=[Citation(source="doc0.pdf", section="0.1 Rule")])
+
+        settings = Settings(retriever="stub", llm_provider="stub", relevance_floor=0.3,
+                            top_k=5, max_context_passages=3)
+        resp, _ = answer_question("q?", FakeRetriever(self._five_passages()), Recording(),
+                                  settings)
+        assert [p.source for p in seen[0]] == ["doc0.pdf", "doc1.pdf", "doc2.pdf"]
+        assert len(resp.retrieved) == 5          # recall@5 still sees all five
+        assert resp.answered_from_context is True
+
+    def test_a_citation_to_a_passage_the_model_never_saw_is_dropped(self) -> None:
+        """doc4.pdf was retrieved but not sent to the model, so citing it is fabricated."""
+        unseen = _answer(citations=[Citation(source="doc4.pdf", section="4.1 Rule")])
+        settings = Settings(retriever="stub", llm_provider="stub", relevance_floor=0.3,
+                            top_k=5, max_context_passages=3)
+        resp, _ = answer_question("q?", FakeRetriever(self._five_passages()),
+                                  FakeProvider(answers=[unseen, unseen]), settings)
+        assert resp.citations == []
+        assert resp.answered_from_context is False
+
 
 # ---------------------------------------------------------------------------
 # Citation filter tests
@@ -160,6 +197,25 @@ class TestCitationFilter:
     def test_empty_citations(self) -> None:
         refs = [RetrievedRef(chunk_id="c1", source="a.pdf", section="1.1", page=1, score=0.9)]
         assert _filter_citations([], refs) == []
+
+    def test_clause_number_matches_the_full_heading_and_is_rewritten_to_it(self) -> None:
+        """Seen live: the model cites "5.4"; the chunker's label is the clause's opening text."""
+        label = "5.4 Minimum CGPA required to avoid academic warning is 2.00"
+        refs = [RetrievedRef(chunk_id="c1", source="h.pdf", section=label, page=24, score=0.83)]
+        result = _filter_citations([Citation(source="h.pdf", section="5.4", page=None)], refs)
+        assert result == [Citation(source="h.pdf", section=label, page=24)]
+
+    def test_a_different_clause_with_the_same_prefix_does_not_match(self) -> None:
+        refs = [RetrievedRef(chunk_id="c1", source="h.pdf", section="5.41 Something else",
+                             page=1, score=0.8),
+                RetrievedRef(chunk_id="c2", source="h.pdf", section="5.4.1 A sub-clause",
+                             page=1, score=0.8)]
+        assert _filter_citations([Citation(source="h.pdf", section="5.4")], refs) == []
+
+    def test_the_same_source_is_still_required(self) -> None:
+        refs = [RetrievedRef(chunk_id="c1", source="h.pdf", section="5.4 Minimum CGPA",
+                             page=1, score=0.8)]
+        assert _filter_citations([Citation(source="other.pdf", section="5.4")], refs) == []
 
 
 # ---------------------------------------------------------------------------

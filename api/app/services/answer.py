@@ -16,6 +16,7 @@ Production steps (section 3.2–3.4):
 from __future__ import annotations
 
 import logging
+import re
 import time
 
 from ..config import Settings
@@ -49,17 +50,38 @@ def _safe_fallback() -> Answer:
     )
 
 
+def _section_matches(cited: str, retrieved: str) -> bool:
+    """True when a cited section names the retrieved one.
+
+    The chunker labels a section with its heading, which for a numbered clause is the
+    number followed by the start of its text ("5.4 Minimum CGPA required ..."), and models
+    usually cite just the number ("5.4"). The number must end where the cited text ends:
+    "5.4" matches "5.4 Minimum ..." but not "5.41" or "5.4.1". Same rule as eval/run_eval.py.
+    """
+    cited, retrieved = cited.strip(), retrieved.strip()
+    if not cited:
+        return False
+    if cited.lower() == retrieved.lower():
+        return True
+    return bool(re.match(re.escape(cited) + r"(?![\d.])", retrieved, re.I))
+
+
 def _filter_citations(
     citations: list[Citation], passages: list["RetrievedRef"],
 ) -> list[Citation]:
-    """Drop any citation that does not match a retrieved passage."""
-    retrieved_set = {(p.source, p.section) for p in passages}
+    """Keep only citations that name a retrieved passage, rewritten to that passage's exact
+    source, section and page, so every returned citation matches a retrieved chunk exactly.
+    Drop the rest."""
     kept: list[Citation] = []
     for c in citations:
-        if (c.source, c.section) in retrieved_set:
-            kept.append(c)
-        else:
+        match = next((p for p in passages
+                      if p.source == c.source and _section_matches(c.section, p.section)), None)
+        if match is None:
             log.warning("Dropped citation not in retrieved set: %s / %s", c.source, c.section)
+            continue
+        cited = Citation(source=match.source, section=match.section, page=match.page)
+        if cited not in kept:
+            kept.append(cited)
     return kept
 
 
@@ -186,9 +208,14 @@ def answer_question(
             provider=provider.name,
         ), False
 
-    # 4. Generate answer (with retry on ungrounded citations)
+    # 4. Generate answer (with retry on ungrounded citations). Only the best
+    #    max_context_passages go into the prompt: on a laptop CPU reading the prompt is
+    #    the slow part. Citations are checked against exactly those passages, and the
+    #    response still lists all top_k retrieved passages (for recall@k).
+    context = passages[: max(1, settings.max_context_passages)]
+    context_refs = retrieved_refs[: len(context)]
     t0 = time.perf_counter()
-    answer = _generate_and_validate(question, passages, retrieved_refs, provider)
+    answer = _generate_and_validate(question, context, context_refs, provider)
     generation_ms = (time.perf_counter() - t0) * 1000
     prom.GENERATION_LATENCY.observe(generation_ms / 1000)
 
