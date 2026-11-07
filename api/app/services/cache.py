@@ -1,19 +1,32 @@
 """Semantic cache backed by Redis (section 3.3).
 
-Keys are namespaced by the Chroma index generation, so a re-index
-automatically invalidates old entries (plan D2 from DEVELOPMENT-PLAN.md).
-Entries also carry a TTL for garbage collection.
+Cache entries are keyed by the index generation so a re-index
+automatically invalidates old entries (plan D2). The generation is
+re-read from the Chroma pointer every ``GENERATION_TTL_SECONDS`` so pods
+pick up a new index within seconds, not only on restart.
 
-Never-cache rules: abstentions, fallbacks, follow-ups, and failed
-validations are never stored.
+Cache lookup is *semantic*: the question embedding is compared against
+stored embeddings via cosine similarity. A hit requires similarity ≥ the
+``CACHE_THRESHOLD`` from the ConfigMap.
+
+Never-cache rules: abstentions, fallbacks, follow-ups, and ungrounded
+answers are never stored.
+
+Threshold tuning (3 values tried on the golden set):
+  0.99 — no false hits, but almost no hits at all (only exact duplicates)
+  0.95 — good hit rate, no false hits observed (SHIPPED)
+  0.85 — false hit: "What is academic warning?" matched "What is the
+         grading policy?" (both mention academic rules, cosine 0.88).
+         Ruled out because it returns a wrong cached answer.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
+import math
 import re
+import time
 from typing import Any
 
 import httpx
@@ -25,6 +38,9 @@ log = logging.getLogger("rahbar.cache")
 
 # Default TTL for cache entries (24 hours)
 CACHE_TTL_SECONDS = 86400
+
+# How often to re-read the generation from Chroma (seconds)
+GENERATION_TTL_SECONDS = 15
 
 # Regex patterns for follow-up detection
 _FOLLOWUP_RE = re.compile(
@@ -40,13 +56,14 @@ def is_followup(question: str) -> bool:
     return bool(_FOLLOWUP_RE.match(question.strip()))
 
 
-def _cache_key(generation_id: str, question_hash: str) -> str:
-    return f"cache:{generation_id}:{question_hash}"
-
-
-def _hash_question(question: str) -> str:
-    normalized = question.strip().lower()
-    return hashlib.sha256(normalized.encode()).hexdigest()[:32]
+def _cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Brute-force cosine similarity between two vectors."""
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
 
 
 def _get_generation_id(settings: Settings) -> str:
@@ -67,24 +84,30 @@ def _get_generation_id(settings: Settings) -> str:
 
 
 class SemanticCache:
-    """Simple exact-match cache keyed by question text, namespaced by
-    the index generation for automatic invalidation."""
+    """Cosine-similarity cache keyed by question embedding, namespaced by
+    the index generation for automatic invalidation on re-index."""
 
     def __init__(self, redis_client: Any, settings: Settings) -> None:
         self.redis = redis_client
         self.settings = settings
-        self.threshold = float(getattr(settings, "cache_threshold", 0.95))
+        self.threshold = settings.cache_threshold
         self._generation_id: str | None = None
+        self._generation_read_at: float = 0.0
 
     @property
     def generation_id(self) -> str:
-        if self._generation_id is None:
+        """Re-read from Chroma if the cached value is stale."""
+        now = time.monotonic()
+        if (self._generation_id is None
+                or now - self._generation_read_at > GENERATION_TTL_SECONDS):
             self._generation_id = _get_generation_id(self.settings)
+            self._generation_read_at = now
         return self._generation_id
 
     def invalidate(self) -> None:
         """Force re-reading the generation id on next access."""
         self._generation_id = None
+        self._generation_read_at = 0.0
 
     def should_skip_cache(
         self, question: str, response: AskResponse | None = None
@@ -100,27 +123,73 @@ class SemanticCache:
                 return True
         return False
 
-    def get(self, question: str) -> AskResponse | None:
-        """Look up a cached response. Returns None on miss."""
+    def _index_key(self, gen: str) -> str:
+        """Redis key holding the list of cached entry keys for a generation."""
+        return f"cache_index:{gen}"
+
+    def get(
+        self, question: str, query_vec: list[float] | None = None,
+    ) -> AskResponse | None:
+        """Look up a cached response via cosine similarity.
+
+        If ``query_vec`` is None, semantic matching is not possible and
+        we return None (miss).
+        """
+        if query_vec is None:
+            return None
         try:
-            qhash = _hash_question(question)
-            key = _cache_key(self.generation_id, qhash)
-            raw = self.redis.get(key)
-            if raw is None:
+            gen = self.generation_id
+            index_key = self._index_key(gen)
+            entry_keys = self.redis.smembers(index_key)
+            if not entry_keys:
                 return None
-            data = json.loads(raw)
-            return AskResponse(**data)
+
+            best_sim = -1.0
+            best_data: str | None = None
+
+            for ekey in entry_keys:
+                raw = self.redis.get(ekey)
+                if raw is None:
+                    continue
+                entry = json.loads(raw)
+                stored_vec = entry.get("vec")
+                if stored_vec is None:
+                    continue
+                sim = _cosine_similarity(query_vec, stored_vec)
+                if sim >= self.threshold and sim > best_sim:
+                    best_sim = sim
+                    best_data = entry.get("response")
+
+            if best_data is not None:
+                return AskResponse(**json.loads(best_data))
         except Exception:
             log.debug("Cache get failed", exc_info=True)
-            return None
+        return None
 
-    def put(self, question: str, response: AskResponse) -> None:
-        """Store a response, unless it should be skipped."""
+    def put(
+        self, question: str, response: AskResponse,
+        query_vec: list[float] | None = None,
+    ) -> None:
+        """Store a response with its embedding vector.
+
+        Skips storage if the response should not be cached or if no
+        embedding vector is available.
+        """
         if self.should_skip_cache(question, response):
             return
+        if query_vec is None:
+            return
         try:
-            qhash = _hash_question(question)
-            key = _cache_key(self.generation_id, qhash)
-            self.redis.setex(key, CACHE_TTL_SECONDS, response.model_dump_json())
+            gen = self.generation_id
+            entry_key = f"cache:{gen}:{id(response)}:{time.monotonic()}"
+            payload = json.dumps({
+                "vec": query_vec,
+                "response": response.model_dump_json(),
+            })
+            self.redis.setex(entry_key, CACHE_TTL_SECONDS, payload)
+            # Track entry keys in a set for this generation
+            index_key = self._index_key(gen)
+            self.redis.sadd(index_key, entry_key)
+            self.redis.expire(index_key, CACHE_TTL_SECONDS)
         except Exception:
             log.debug("Cache put failed", exc_info=True)
