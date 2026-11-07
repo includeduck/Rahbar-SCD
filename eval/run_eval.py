@@ -213,7 +213,7 @@ def main() -> int:
     questions = load_golden(args.golden)
     rows = []
     headers = {"Host": args.host} if args.host else {}
-    with httpx.Client(timeout=120.0, headers=headers) as client:
+    with httpx.Client(timeout=300.0, headers=headers) as client:   # matches the Ingress
         for q in questions:
             started = time.perf_counter()
             response = ask(client, args.api, q["question"])
