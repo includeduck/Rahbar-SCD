@@ -41,16 +41,16 @@ The chunking stage (`indexer/pipeline/chunk.py`) uses a recursive, structure-awa
 
 ### Chunking Configuration Measurements
 
-Token count is approximated via whitespace word count. Evaluated configurations against the golden evaluation set:
+Sizes are in words (whitespace tokens). Measured on 8 November with [`eval/chunk_sweep.py`](../eval/chunk_sweep.py): our own extract → clean → chunk stages in the indexer image (with OCR), nomic-embed-text, cosine top-5 with the api's superseded filter, scored by `eval/run_eval.py`'s `recall_at_k` over the 16 golden questions that have relevant passages. The 400/50 row reproduces the live evaluation in section 7 exactly, which shows the offline sweep and the live stack agree. Output: [`docs/evidence/chunk-sweep.txt`](evidence/chunk-sweep.txt) (per question and per document) and `chunk-sweep.json`.
 
-| Configuration | Chunk Size (words) | Overlap (words) | recall@5 | Storage Amplification | Chunks Stored | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| Small / Fine | 200 | 40 | 0.5625 | 1.38x | 1,048 | Higher granularity; splits multi-clause policies |
-| **Shipped** | **400** | **50** | **0.6250** | **1.18x** | **710** | **Optimal balance of context, specificity, and citation integrity** |
-| Large / Coarse | 800 | 100 | 0.5000 | 1.12x | 562 | Dilutes specific clause numbers in vector space |
-| Baseline Broken | 100 | 0 | 0.4375 | 1.01x | 1,540 | Arbitrary fixed cutoffs break clauses and context |
+| Size / overlap | Chunks | Amplification | recall@3 | recall@5 | Notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 100 / 0 | 1,438 | 1.105× | 0.6250 | 0.6875 | +q04, +q18; hostel questions now outscore the weakest answerable one (0.642 vs 0.6225), so no floor separates them |
+| 200 / 40 | 1,005 | 1.284× | 0.5938 | 0.6562 | +q04, nothing lost; the candidate to test end to end |
+| **400 / 50 (shipped)** | **710** | **1.165×** | **0.5625** | **0.6250** | Matches the live run |
+| 800 / 100 | 588 | 1.139× | 0.5000 | 0.5625 | −q08 |
 
-*Storage amplification* is measured as total chunked words divided by original document words (~1.18× for the shipped 400/50 configuration due to 50-word overlap and prepended section headers). Chunk counts reflect the full 9-document corpus (710 chunks total on the live minikube cluster, 592 across the 7 text-layer documents). See [`docs/adr/0002-chunking-strategy.md`](adr/0002-chunking-strategy.md) for the decision record.
+*Storage amplification* is the number of words stored in chunks divided by the words in the cleaned pages (112,496 / 96,586 for 400/50). The prepended heading keeps it above 1 even with no overlap. Only two questions (q04, q18) change between configurations; five (q05, q06, q09, q11, q12) miss in all of them, because of extraction and labelling problems (section 7), not chunk size. We kept 400/50 for now; [ADR 0002](adr/0002-chunking-strategy.md) explains why and what switching to 200/40 would take.
 
 ---
 

@@ -1,7 +1,7 @@
 # ADR 0002: Structure-aware recursive chunking (400 words, 50-word overlap)
 
 ## Status
-Accepted · 7 November 2026
+Accepted · 7 November 2026 · measurements replaced with the offline sweep on 8 November 2026
 
 ## Context
 
@@ -24,22 +24,31 @@ We implement a **structure-aware recursive chunking strategy** in `indexer/pipel
 
 ## Options considered and evaluated
 
-We evaluated four configurations against the 18-question golden evaluation set on the real FAST-NUCES corpus (89,655 document words across 9 documents):
+Measured with [`eval/chunk_sweep.py`](../../eval/chunk_sweep.py), which runs our own extract, clean and chunk stages inside the indexer image (with OCR), embeds with nomic-embed-text and ranks by cosine with the api's superseded filter, scoring with `eval/run_eval.py`'s `recall_at_k` over the 16 golden questions that have relevant passages. Its 400/50 row reproduces the live minikube evaluation exactly (710 chunks, recall@3 0.5625, recall@5 0.625), so the other rows are comparable. Output: [`docs/evidence/chunk-sweep.txt`](../evidence/chunk-sweep.txt).
 
-| Configuration | Chunk Size (words) | Overlap (words) | recall@5 | Storage Amplification | Chunks Stored | Evaluation Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| Small / Fine | 200 | 40 | 0.5625 | 1.38x | 1,048 | Over-fragmentation; splits multi-clause policies across chunk boundaries. |
-| **Shipped** | **400** | **50** | **0.6250** | **1.18x** | **710** | **Highest recall@5, clean section preservation, optimal context window.** |
-| Large / Coarse | 800 | 100 | 0.5000 | 1.12x | 562 | Dilutes clause numbers in vector space; top-k hits contain too much irrelevant prose. |
-| Baseline Broken | 100 | 0 | 0.4375 | 1.01x | 1,540 | Fixed window splits sentences; headings severed from clauses; citation validity collapses. |
+| Size / overlap (words) | Chunks | Amplification | recall@3 | recall@5 | Hostel (must-abstain) best scores |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 100 / 0 | 1,438 | 1.105× | 0.6250 | **0.6875** | 0.642 / 0.620 |
+| 200 / 40 | 1,005 | 1.284× | 0.5938 | 0.6562 | 0.612 / 0.609 |
+| **400 / 50 (shipped)** | **710** | **1.165×** | **0.5625** | **0.6250** | **0.612 / 0.597** |
+| 800 / 100 | 588 | 1.139× | 0.5000 | 0.5625 | 0.612 / 0.597 |
+
+Amplification is the number of words stored in chunks divided by the words in the cleaned pages (96,586). It stays above 1 even with no overlap, because every chunk repeats its heading.
+
+**Why we kept 400/50 although smaller chunks score higher.**
+1. **The gains are two questions.** 14 of the 16 questions score the same in every configuration. Both gains are questions with two relevant labels, where smaller chunks fit the second label into the top 5: q04 (two Student Handbook pages about hostels) at 200/40 and 100/0, and q18 at 100/0. 800/100 loses q08.
+2. **100/0 breaks abstention.** Its hostel questions score 0.642 and 0.620, above the weakest answerable question (q02, 0.6225), so no relevance floor could separate them. At 400/50 and 200/40 the hostel scores stay below q02.
+3. **Generation was not measured per configuration.** The model reads only `MAX_CONTEXT_PASSAGES=3` passages, so 100-word chunks would give it about 300 words to answer from. A live evaluation with the LLM takes about an hour on our CPU, and we ran it only for 400/50.
+
+**200/40 is the open candidate:** one more question found (q04), nothing lost, hostel scores still below q02, at the cost of 42% more chunks. Switching to it needs a re-index, a full live evaluation and a new `eval/baseline.json`. We did not do that before the deadline.
 
 ## Consequences
 
 - **What this makes easier:**
-  - Optimal retrieval performance: `recall@5` reaches 0.6250 on the real corpus, outperforming all other tested configurations.
-  - Citation validity: Because section headers are prepended to chunk text and recorded in metadata, generated citations match retrieved passages with 100% validity (`eval/results.json`).
-  - Storage amplification is kept to a modest 1.18× (105,790 chunk words vs. 89,655 source words).
+  - Every chunk carries a clause or heading label, so citations can be checked: citation validity was 1.00 on the live evaluation (`eval/results.json`).
+  - At 710 chunks, the live re-index takes 500 s on our laptop (most of it embedding).
 - **What this makes harder:**
-  - Documents with multi-column layouts (such as `prospectus-2026-academic-rules-and-regulations.pdf`) occasionally interleave headings when extracted line-by-line; these require column-aware text cleaning in `indexer/pipeline/clean.py`.
+  - Section labels are only as good as extraction. Two-column pages in `academic-rules-handbook-jun-2026.pdf` bury clause 5.8 inside the chunk labelled 5.1. Student Handbook chunks take the running page header ("34 Student Handbook 2026") as their label, and Prospectus chunks often have none. Recall is limited by these problems, not by the chunk size: q05, q06, q09, q11 and q12 miss in every configuration.
 - **What we watch for:**
-  - If university rules are updated with larger tabular sections, tables should be converted to Markdown rows during extraction so table rows are not split mid-record.
+  - Re-run `eval/chunk_sweep.py` whenever the extractor, cleaner or golden set changes; the six runs took 23 minutes on our laptop, starting from an empty embedding cache.
+  - 200/40, measured end to end with the LLM before switching.
