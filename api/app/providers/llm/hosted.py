@@ -15,13 +15,15 @@ import httpx
 from pydantic import ValidationError
 
 from ...config import Settings
+from ...routes import metrics as prom
 from ...schemas import Answer, Passage
 from .prompt import build_prompt
 
 log = logging.getLogger("rahbar.provider.hosted")
 
 TIMEOUT = 60.0
-MAX_RETRIES = 1
+# Number of retries on validation failure before falling back
+RETRIES = 1
 
 
 def _safe_fallback(question: str) -> Answer:
@@ -61,21 +63,31 @@ class HostedProvider:
         }
 
         last_error: str = ""
-        for attempt in range(1 + MAX_RETRIES):
+        for attempt in range(1 + RETRIES):
             try:
                 resp = self._client.post(url, json=payload, headers=headers, timeout=TIMEOUT)
                 resp.raise_for_status()
                 data = resp.json()
+
+                # Record token usage from hosted response
+                usage = data.get("usage") or {}
+                prompt_tokens = usage.get("prompt_tokens", 0)
+                completion_tokens = usage.get("completion_tokens", 0)
+                if prompt_tokens:
+                    prom.TOKENS_IN.inc(prompt_tokens)
+                if completion_tokens:
+                    prom.TOKENS_OUT.inc(completion_tokens)
+
                 content = data["choices"][0]["message"]["content"]
                 answer = Answer.model_validate(json.loads(content))
                 return answer
             except (ValidationError, json.JSONDecodeError, KeyError, IndexError) as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
-                log.warning("Validation failed on attempt %d: %s", attempt + 1, last_error)
+                log.warning("Validation failed on retry attempt %d: %s", attempt + 1, last_error)
             except httpx.HTTPError as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
                 log.warning("HTTP error on attempt %d: %s", attempt + 1, last_error)
                 break
 
-        log.error("Falling back after %d attempts: %s", 1 + MAX_RETRIES, last_error)
+        log.error("Falling back after %d retries: %s", 1 + RETRIES, last_error)
         return _safe_fallback(question)

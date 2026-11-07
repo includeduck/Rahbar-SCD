@@ -15,12 +15,14 @@ from pydantic import ValidationError
 
 from ...config import Settings
 from ...schemas import Answer, Passage
+from ...routes import metrics as prom
 from .prompt import build_prompt
 
 log = logging.getLogger("rahbar.provider.ollama")
 
 TIMEOUT = 60.0
-MAX_RETRIES = 1
+# Number of retries on validation failure before falling back
+RETRIES = 1
 
 
 def _answer_schema() -> dict[str, object]:
@@ -28,7 +30,7 @@ def _answer_schema() -> dict[str, object]:
     return Answer.model_json_schema()
 
 
-def _safe_fallback(question: str) -> Answer:
+def _safe_fallback() -> Answer:
     """A safe answer that never surfaces a 500 or a fabricated citation."""
     return Answer(
         reasoning="fallback: the model did not produce a valid response",
@@ -59,21 +61,31 @@ class OllamaProvider:
         }
 
         last_error: str = ""
-        for attempt in range(1 + MAX_RETRIES):
+        for attempt in range(1 + RETRIES):
             try:
                 resp = self._client.post(url, json=payload, timeout=TIMEOUT)
                 resp.raise_for_status()
                 data = resp.json()
+
+                # Record token usage from Ollama response
+                prompt_tokens = data.get("prompt_eval_count", 0)
+                completion_tokens = data.get("eval_count", 0)
+                if prompt_tokens:
+                    prom.TOKENS_IN.inc(prompt_tokens)
+                if completion_tokens:
+                    prom.TOKENS_OUT.inc(completion_tokens)
+
                 content = data.get("message", {}).get("content", "")
                 answer = Answer.model_validate(json.loads(content))
                 return answer
             except (ValidationError, json.JSONDecodeError, KeyError) as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
-                log.warning("Validation failed on attempt %d: %s", attempt + 1, last_error)
+                log.warning("Validation failed on retry attempt %d: %s",
+                            attempt + 1, last_error)
             except httpx.HTTPError as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
                 log.warning("HTTP error on attempt %d: %s", attempt + 1, last_error)
                 break  # no point retrying a network error with the same payload
 
-        log.error("Falling back after %d attempts: %s", 1 + MAX_RETRIES, last_error)
-        return _safe_fallback(question)
+        log.error("Falling back after %d retries: %s", 1 + RETRIES, last_error)
+        return _safe_fallback()
