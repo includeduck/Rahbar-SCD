@@ -203,6 +203,8 @@ Both programs read environment variables only, from the `rahbar-config` ConfigMa
 | `CHROMA_HOST`, `REDIS_URL`, `OLLAMA_URL` | api, indexer | Service addresses |
 | `LLM_API_KEY` | api | Secret only, hosted mode only |
 
+**Optional: a hosted model.** [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml) switches generation to a free model on OpenRouter and gives the api HTTPS egress, which the default overlays do not. Create the Secret first (step 4 above, with your OpenRouter key), then `kubectl apply -k k8s/overlays/hosted` and restart the api. The question and three document excerpts then leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered.
+
 ## Corpus
 
 Nine public documents from the FAST-NUCES website (279 PDF pages plus the Fee Structure and

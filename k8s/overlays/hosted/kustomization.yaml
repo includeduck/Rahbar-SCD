@@ -1,0 +1,37 @@
+# Opt-in experiment: the dev stack with generation on a hosted model through OpenRouter.
+# Retrieval, embeddings (nomic-embed-text on host Ollama) and the index are unchanged, so a
+# run here compares models on the same retrieved passages. The default stays the dev overlay,
+# which needs no key.
+#
+#   export LLM_API_KEY=...        # your OpenRouter key, typed in your own terminal
+#   make secret                   # creates rahbar-secret from it; never from a file
+#   kubectl apply -k k8s/overlays/hosted
+#   kubectl -n rahbar rollout restart deploy/api   # the api reads the Secret at start
+#
+# Back to llama3.2:3b: kubectl apply -k k8s/overlays/dev, then
+#   kubectl -n rahbar delete networkpolicy allow-api-hosted-llm-egress
+#   kubectl -n rahbar rollout restart deploy/api
+#
+# What leaves the cluster: each question that passes the self-harm check and the relevance
+# floor, with its top MAX_CONTEXT_PASSAGES document excerpts (docs/adr/0004).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../dev
+  - networkpolicy-hosted-llm.yaml
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: rahbar-config
+    patch: |-
+      - op: replace
+        path: /data/LLM_PROVIDER
+        value: hosted
+      - op: replace
+        path: /data/LLM_MODEL
+        value: dots-studio/dots-3-note-preview:free
+      - op: add
+        path: /data/HOSTED_BASE_URL
+        value: https://openrouter.ai/api/v1
