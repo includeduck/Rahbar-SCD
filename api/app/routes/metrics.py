@@ -38,6 +38,8 @@ CACHE_MISSES = Counter("rahbar_cache_misses_total", "Semantic cache misses")
 # Answer type counters
 ABSTENTIONS = Counter("rahbar_abstentions_total", "Questions where the system abstained")
 FALLBACKS = Counter("rahbar_fallbacks_total", "Answers that used the safe fallback")
+SUPPORT_REPLIES = Counter("rahbar_support_replies_total",
+                          "Questions that mentioned self-harm and got the support message")
 
 # Token counters (approximate)
 TOKENS_IN = Counter("rahbar_tokens_in_total", "Approximate input tokens to the LLM")

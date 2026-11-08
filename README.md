@@ -184,8 +184,10 @@ Sunday 03:00 PKT.
 | POST | `/api/ask` | `{"question": "..."}` (3 to 500 characters) → answer, citations, `answered_from_context`, `confidence`, the retrieved passages. Echoes `X-Request-ID`; `X-Cache: hit\|miss` |
 | GET | `/healthz` | Liveness: the process is alive. Touches no dependency |
 | GET | `/readyz` | Readiness: Chroma reachable, collection non-empty, embedding model matches, Redis reachable; otherwise 503 naming the failure |
-| GET | `/metrics` | Prometheus metrics: request count and latency by route, retrieval and generation latency, cache hits and misses, abstentions, fallbacks, tokens in and out |
+| GET | `/metrics` | Prometheus metrics: request count and latency by route, retrieval and generation latency, cache hits and misses, abstentions, fallbacks, support replies, tokens in and out |
 | GET | `/docs` | Interactive API documentation (FastAPI) |
+
+A question that mentions self-harm (`api/app/services/safety.py`, a phrase list in English, Roman Urdu and Urdu) gets a fixed support message pointing to people on campus and Rescue 1122. It skips the cache, retrieval and the model, and the question text is not logged. Every other abstention shows one fixed message too, never the model's own text.
 
 ## Configuration
 

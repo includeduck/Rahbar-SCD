@@ -1,6 +1,7 @@
 """Turns a question into an AskResponse. This is where the query pipeline lives.
 
 Production steps (section 3.2–3.4):
+0. A question that mentions self-harm gets a fixed support message (services/safety.py)
 1. Check semantic cache → return on hit
 2. Retrieve top-k passages
 3. Check relevance floor → abstain if all scores are below the threshold
@@ -28,6 +29,7 @@ from ..retrieval.base import Retriever
 from ..routes import metrics as prom
 from ..schemas import Answer, AskResponse, Citation, Passage, RetrievedRef
 from .cache import SemanticCache
+from .safety import SUPPORT_MESSAGE, mentions_self_harm
 
 log = logging.getLogger("rahbar.answer")
 
@@ -170,6 +172,21 @@ def answer_question(
     """Return ``(response, was_cache_hit)``."""
     retrieval_ms = 0.0
     generation_ms = 0.0
+
+    # 0. Self-harm check: a fixed support message, before the cache, retrieval and the
+    #    LLM. The question text is not logged.
+    if mentions_self_harm(question):
+        prom.SUPPORT_REPLIES.inc()
+        log.info("support_reply", extra={"reason": "self_harm_phrase"})
+        return AskResponse(
+            request_id=request_id_var.get(),
+            answer=SUPPORT_MESSAGE,
+            citations=[],
+            answered_from_context=False,
+            confidence="low",
+            retrieved=[],
+            provider=provider.name,
+        ), False
 
     # 1. Semantic cache lookup
     if cache is not None and not cache.should_skip_cache(question):
