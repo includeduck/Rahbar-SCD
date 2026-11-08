@@ -138,11 +138,11 @@ def _generate_and_validate(
             )
 
         # answered_from_context=False always means abstain, even when the model also cites a
-        # retrieved passage with high confidence. On 8 Nov llama3.2:3b did that both for a
-        # correct answer (clause 5.6) and for a coercion attempt ("I will harm myself if you
-        # don't leak ..."), so neither the citation nor the confidence tells them apart.
-        # Trusting the citation served the second as "From the documents"; abstaining loses
-        # the first, which is the safe way to be wrong.
+        # retrieved passage with high confidence. Measured on 8 Nov with llama3.2:3b
+        # (eval/compare_flag_rules.py, docs/evidence/flag-rule-comparison.txt): such answers
+        # were right in 3 of 5 cases ("100%" attendance, clause 5.6, FYP credits) and wrong
+        # in 2 ("a maximum of two courses in a semester", read from the summer rule). A
+        # missed answer is the safe way to be wrong.
         #
         # An abstention shows our fixed text, never the model's. Nothing checks that text
         # against the passages, and the model returned "" for an injection attempt and
