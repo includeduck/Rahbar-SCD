@@ -398,9 +398,9 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
       (generic answers score zero). Note the "failure that cost us an hour" when it happens
 - [x] ADRs 0001–0004 (ADR 0001 still to be rewritten in Wasay's own words, §4.2)
 - [ ] `docs/AI-USAGE.md` complete, including what we changed (many rows still say "Pending our review")
-- [ ] `docs/evidence/` (≥ 5 files): ruleset (`branch-protection-ruleset-1..4.png` and `.json`), blocked merge (PR #13), `kubectl top`,
+- [x] `docs/evidence/` (≥ 5 files): ruleset (`branch-protection-ruleset-1..4.png` and `.json`), blocked merge (PR #13), `kubectl top`,
       `kubectl get endpoints`, `kubectl get hpa`, plus rollout/undo, pin demo, NetworkPolicy
-      test, pod deletion. Left: re-index without redeploy (no capture yet)
+      test, pod deletion, re-index without redeploy (`reindex-without-redeploy.txt`)
 
 ## Phase 13: Submission
 

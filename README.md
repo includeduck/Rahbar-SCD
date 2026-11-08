@@ -182,6 +182,9 @@ kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
 (`make index` does the same with a timestamped name.) The `reindex` CronJob also runs weekly,
 Sunday 03:00 PKT.
 
+Captured on 8 Nov: 16 questions during and after a re-index all answered, the pointer moved to the new
+generation, and the api pods never restarted ([`docs/evidence/reindex-without-redeploy.txt`](docs/evidence/reindex-without-redeploy.txt)).
+
 ## API
 
 | Method | Path | Purpose |
