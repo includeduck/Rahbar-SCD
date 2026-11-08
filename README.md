@@ -158,6 +158,11 @@ purpose; the answer comes back with `"answered_from_context": false`:
 make ask Q="How do I apply for a hostel room?"
 ```
 
+Both in the chat page (the default stack, `llama3.2:3b` on host Ollama, 8 Nov 2026): an answer with its source,
+and a question the documents do not cover.
+
+![The RAHBAR chat page: "What CGPA puts a student on academic warning?" answered 2.00 from clause 5.4 of the academic rules handbook, and "How do I apply for a hostel room?" declined as not covered by the documents](docs/evidence/ui-answer-and-abstention.png)
+
 **9. Delete an api pod and keep asking.** Nothing breaks: the other two keep serving, the
 Service only sends traffic to ready pods, and the Deployment replaces the deleted one.
 
@@ -259,6 +264,6 @@ Work happens on `dev`.
 | [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md) | Detailed answers to the seven engineering and scaling case study questions with exact file paths and line numbers |
 | [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) | Switching the generation model: hosted on OpenRouter, back to Ollama, another Ollama model, measuring, troubleshooting |
 | [`docs/adr/`](docs/adr) | Architecture decision records (ADRs 0001–0004) |
-| [`docs/evidence/`](docs/evidence) | Command output behind every claim: NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile |
+| [`docs/evidence/`](docs/evidence) | Command output and screenshots behind every claim: branch-protection ruleset, CI gate demo, NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile, measurements (chunking, cache threshold, flag rule, hosted model), the chat page |
 | [`docs/AI-USAGE.md`](docs/AI-USAGE.md) | Which AI tools wrote or shaped what, and what we changed |
 | [`PHASES.md`](PHASES.md) | The plan, phase by phase, with what is done |
