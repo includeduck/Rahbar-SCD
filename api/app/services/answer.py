@@ -10,7 +10,7 @@ Production steps (section 3.2–3.4):
 7. If all citations dropped but model claimed answered_from_context, retry
    once then fallback to answered_from_context=false (never cache it). If the model
    says answered_from_context=false but a valid citation remains, trust the citation
-   unless confidence is low, in which case drop the citations (an abstention)
+   unless confidence is low. Every abstention shows ABSTAIN_MESSAGE, not the model's text
 8. Store in cache (skip abstentions, fallbacks, follow-ups)
 9. Log one structured line per request with chunk ids and scores
 """
@@ -39,6 +39,10 @@ GENERATE_RETRIES = 1
 
 
 FALLBACK_MESSAGE = "I was unable to generate a reliable answer. Please rephrase or try again."
+
+# Every abstention, whether from the relevance floor or from the model, shows this text.
+ABSTAIN_MESSAGE = ("I don't have enough relevant information in the available "
+                   "documents to answer this question.")
 
 
 def _safe_fallback() -> Answer:
@@ -136,16 +140,20 @@ def _generate_and_validate(
         # correct answer citing clause 5.6, confidence high, answered_from_context false,
         # which the UI labelled "Not covered by the documents". A citation that survived
         # the filter names a passage we retrieved, so a confident answer is grounded; a
-        # low-confidence one is the abstention it says it is, without citations.
-        if not answer.answered_from_context and answer.citations:
+        # low-confidence one stays the abstention it says it is.
+        if (not answer.answered_from_context and answer.citations
+                and answer.confidence != "low"):
             log.warning("Contradictory answer: answered_from_context=False with %d valid "
-                        "citation(s), confidence %s; treating it as %s",
-                        len(answer.citations), answer.confidence,
-                        "an abstention" if answer.confidence == "low" else "grounded")
-            if answer.confidence == "low":
-                answer.citations = []
-            else:
-                answer.answered_from_context = True
+                        "citation(s), confidence %s; treating it as grounded",
+                        len(answer.citations), answer.confidence)
+            answer.answered_from_context = True
+
+        # An abstention shows our fixed text, never the model's. Nothing checks that text
+        # against the passages, and on 8 Nov the model returned "" for an injection attempt
+        # and "Not applicable" for the hostel question.
+        if not answer.answered_from_context:
+            answer.answer = ABSTAIN_MESSAGE
+            answer.citations = []
 
         return answer
 
@@ -217,8 +225,7 @@ def answer_question(
         })
         return AskResponse(
             request_id=request_id_var.get(),
-            answer="I don't have enough relevant information in the available "
-                   "documents to answer this question.",
+            answer=ABSTAIN_MESSAGE,
             citations=[],
             answered_from_context=False,
             confidence="low",
