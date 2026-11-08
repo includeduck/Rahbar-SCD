@@ -1,0 +1,40 @@
+# eval/cache_threshold.py against host Ollama 0.40.15, 2026-11-07 22:48 UTC
+# python eval/cache_threshold.py --ollama http://localhost:11434
+model nomic-embed-text
+
+paraphrases (should hit):
+  0.9787  'How much is the BS fee per credit hour?' ~ 'What is the fee per credit hour for BS?'
+  0.9648  'If I repeat a course, is my grade capped?' ~ 'Is the grade capped when a course is repeated?'
+  0.9610  'What is the admission fee?' ~ 'How much is the admission fee?'
+  0.9444  'How do I apply for a hostel room?' ~ 'How do I apply for hostel accommodation?'
+  0.9115  'What does clause 1.21 of the academic rules require?' ~ 'What does academic rule 1.21 say?'
+  0.8964  'Can a student register for more than five courses in a semester?' ~ 'Can I take more than five courses in one semester?'
+  0.8834  'What CGPA puts a student on academic warning?' ~ 'academic warning CGPA threshold'
+  0.8718  'What CGPA does an undergraduate need to stay off academic warning?' ~ 'What is the minimum CGPA to avoid academic warning?'
+  0.8572  'What is the minimum attendance percentage required to sit the final exam?' ~ 'What attendance do I need to be allowed into the final exam?'
+  0.7934  'How much absence can the Head of Department condone?' ~ 'How many absences can the HoD condone?'
+
+different questions (must not hit):
+  0.9531  'Can a student register for more than five courses in a semester?' ~ 'Can a student register for fewer than three courses in a semester?'
+  0.9514  'What does clause 1.21 of the academic rules require?' ~ 'What does clause 1.22 of the academic rules require?'
+  0.8030  'How much is the BS fee per credit hour?' ~ 'How much is the MS fee per credit hour?'
+  0.7273  'What CGPA does an undergraduate need to stay off academic warning?' ~ 'What happens if a student stays on academic warning for two semesters?'
+  0.6953  'If I repeat a course, is my grade capped?' ~ 'If I fail a course, when do I have to retake it?'
+  0.6647  'What CGPA puts a student on academic warning?' ~ 'What CGPA is needed to graduate?'
+  0.6484  'How do I apply for a hostel room?' ~ 'How do I apply for a scholarship?'
+  0.6379  'How much is the BS fee per credit hour?' ~ 'How much is the admission fee?'
+  0.6357  'What is the minimum attendance percentage required to sit the final exam?' ~ 'What is the minimum CGPA to graduate?'
+  0.5787  'What is academic warning?' ~ 'What is the grading policy?'
+
+threshold  paraphrase hits  false hits
+     0.80       9/10           3/10
+     0.85       9/10           2/10
+     0.88       7/10           2/10
+     0.90       5/10           2/10
+     0.92       4/10           2/10
+     0.95       3/10           2/10
+     0.96       3/10           0/10
+     0.97       1/10           0/10
+     0.99       0/10           0/10
+
+lowest threshold with zero false hits: 0.96

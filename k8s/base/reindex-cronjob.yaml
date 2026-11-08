@@ -103,10 +103,12 @@ spec:
               envFrom:
                 - configMapRef:
                     name: rahbar-config
+              # Sized from `kubectl top` during real run (docs/evidence/kubectl-top-indexer.txt):
+              # peak memory 712 MiB during OCR, peak CPU 1405m. Limit 2Gi gives 65% margin (no OOM 137).
               resources:
                 requests:
-                  cpu: 250m
-                  memory: 512Mi
+                  cpu: 500m
+                  memory: 768Mi
                 limits:
                   cpu: "2"
                   memory: 2Gi

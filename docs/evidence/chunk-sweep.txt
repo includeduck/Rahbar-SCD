@@ -1,0 +1,63 @@
+# Offline retrieval sweep, 8 November 2026 (eval/chunk_sweep.py; full data in chunk-sweep.json)
+# Inside rahbar-indexer:dev (tesseract, poppler), nomic-embed-text on host Ollama 0.40.15,
+# eval/golden.yaml (18 questions; 16 with relevant passages), top-5 by cosine, superseded filter
+# as in api/app/retrieval/chroma.py, recall_at_k from eval/run_eval.py.
+# Check: the shipped row reproduces the live minikube evaluation exactly (710 chunks, recall@3
+# 0.5625, recall@5 0.625, same per-type values; docs/PIPELINE.md section 7).
+
+configuration                      chunks  ampl.     r@3     r@5  ordinary version exact injection  hostel top scores  secs
+shipped 400/50                        710 1.165x  0.5625  0.6250    0.7000  0.3333  0.50      1.00  0.6124 / 0.5966  491.1
+small 200/40                         1005 1.284x  0.5938  0.6562    0.7500  0.3333  0.50      1.00  0.6124 / 0.6090  318.2
+large 800/100                         588 1.139x  0.5000  0.5625    0.6000  0.3333  0.50      1.00  0.6124 / 0.5966  259.6
+tiny 100/0                           1438 1.105x  0.6250  0.6875    0.8000  0.3333  0.50      1.00  0.6421 / 0.6204  256.1
+400/50 without OCR                    595 1.161x  0.5625  0.6250    0.7000  0.3333  0.50      1.00  0.6124 / 0.5966   53.7
+400/50 without superseded filter      710 1.165x  0.5000  0.5625    0.7000  0.0000  0.50      1.00  0.6124 / 0.5966    1.0
+
+source words: OCR on 96586, OCR off 89675; amplification = words in chunks / words in cleaned pages
+
+recall@5 per question (- = must-abstain); last column: superseded chunks in the top 5 without the filter
+id   type        400/50   200/40  800/100    100/0    noOCR nofilter  best score (400/50)
+q01  ordinary       1.0      1.0      1.0      1.0      1.0      1.0  sup=1  top=0.8879
+q02  ordinary       1.0      1.0      1.0      1.0      1.0      1.0  sup=3  top=0.6225
+q03  ordinary       1.0      1.0      1.0      1.0      1.0      1.0  sup=1  top=0.7564
+q04  ordinary       0.5      1.0      0.5      1.0      0.5      0.5  sup=1  top=0.627
+q05  ordinary       0.0      0.0      0.0      0.0      0.0      0.0  sup=0  top=0.7836
+q06  ordinary       0.0      0.0      0.0      0.0      0.0      0.0  sup=2  top=0.7083
+q07  ordinary       1.0      1.0      1.0      1.0      1.0      1.0  sup=1  top=0.7481
+q08  ordinary       1.0      1.0      0.0      1.0      1.0      1.0  sup=0  top=0.7816
+q09  version        0.0      0.0      0.0      0.0      0.0      0.0  sup=2  top=0.7466
+q10  version        1.0      1.0      1.0      1.0      1.0      0.0  sup=1  top=0.7943
+q11  version        0.0      0.0      0.0      0.0      0.0      0.0  sup=0  top=0.7231
+q12  exact          0.0      0.0      0.0      0.0      0.0      0.0  sup=2  top=0.786
+q13  exact          1.0      1.0      1.0      1.0      1.0      1.0  sup=3  top=0.7554
+q14  abstain          -        -        -        -        -        -  sup=0  top=0.6124
+q15  abstain          -        -        -        -        -        -  sup=0  top=0.5966
+q16  injection      1.0      1.0      1.0      1.0      1.0      1.0  sup=2  top=0.6963
+q17  ordinary       1.0      1.0      1.0      1.0      1.0      1.0  sup=0  top=0.8412
+q18  ordinary       0.5      0.5      0.5      1.0      0.5      0.5  sup=1  top=0.7821
+
+chunks per document
+document                                                       400/50   200/40  800/100    100/0    noOCR nofilter
+undergraduate-academic-rules-aug-2023.pdf                         106      113      105      124        3      106
+academic-rules-handbook-jun-2026.pdf                              254      280      242      327      249      254
+prospectus-2026-academic-rules-and-regulations.pdf                 18       38        9       69       18       18
+student-handbook-jun-2026.pdf                                      85      167       50      285       84       85
+annual-report-2019-20.pdf                                          54       86       41      132       54       54
+annual-report-2023-24.pdf                                         171      291      122      454      171      171
+fee-structure-page.html                                             9        9        9       13        9        9
+grading-page.html                                                   7        9        7       12        7        7
+faculty-entrepreneurship-and-technical-start-ups-policy.pdf         6       12        3       22        0        6
+
+top 5 without the superseded filter, where it changed the answer:
+  q09:
+    undergraduate-academic-rules-aug-2023.pdf | 5.10 Whena student repeats a course whose post-requisite cou
+    grading-page.html | Repeating a Course
+    undergraduate-academic-rules-aug-2023.pdf | 5.11 Ifa student repeats a failed course, the new grade will
+    prospectus-2026-academic-rules-and-regulations.pdf | 218 Prospectus 2026
+    student-handbook-jun-2026.pdf | 18 Student Handbook 2026
+  q10:
+    undergraduate-academic-rules-aug-2023.pdf | 1.19 A student can register for a maximum of two courses in 
+    academic-rules-handbook-jun-2026.pdf | 1.19 A student can register for a maximum of two courses in
+    academic-rules-handbook-jun-2026.pdf | 1.19 A student can register for a maximum of two courses in
+    academic-rules-handbook-jun-2026.pdf | 6.6 A student will be allowed to repeat a maximum of 2 cours
+    academic-rules-handbook-jun-2026.pdf | 6.6 A student will be allowed to repeat a maximum of 2 cours
