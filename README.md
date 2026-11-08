@@ -203,7 +203,7 @@ Both programs read environment variables only, from the `rahbar-config` ConfigMa
 | `CHROMA_HOST`, `REDIS_URL`, `OLLAMA_URL` | api, indexer | Service addresses |
 | `LLM_API_KEY` | api | Secret only, hosted mode only |
 
-**Optional: a hosted model.** [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml) switches generation to a free model on OpenRouter and gives the api HTTPS egress, which the default overlays do not. Create the Secret first (step 4 above, with your OpenRouter key), then `kubectl apply -k k8s/overlays/hosted` and restart the api. The question and three document excerpts then leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered.
+**Switching the generation model.** [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) has the exact steps: to a hosted model on OpenRouter with the opt-in overlay [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml), back to the default, to another Ollama model, how to measure a model, and what each failure looks like. In hosted mode the question and three document excerpts leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered, so the default stays on Ollama. `EMBED_MODEL` is different: changing it needs a re-index.
 
 ## Corpus
 
@@ -257,6 +257,7 @@ Work happens on `dev`.
 | [`docs/PIPELINE.md`](docs/PIPELINE.md) | The indexing stages and chunking measurements |
 | [`docs/FAILURE-ANALYSIS.md`](docs/FAILURE-ANALYSIS.md) | Failure injection and recovery across extraction, chunking, retrieval, generation, and superseded filtering |
 | [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md) | Detailed answers to the seven engineering and scaling case study questions with exact file paths and line numbers |
+| [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) | Switching the generation model: hosted on OpenRouter, back to Ollama, another Ollama model, measuring, troubleshooting |
 | [`docs/adr/`](docs/adr) | Architecture decision records (ADRs 0001–0004) |
 | [`docs/evidence/`](docs/evidence) | Command output behind every claim: NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile |
 | [`docs/AI-USAGE.md`](docs/AI-USAGE.md) | Which AI tools wrote or shaped what, and what we changed |

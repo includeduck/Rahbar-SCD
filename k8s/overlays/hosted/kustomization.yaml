@@ -1,4 +1,5 @@
 # Opt-in experiment: the dev stack with generation on a hosted model through OpenRouter.
+# Step-by-step guide, troubleshooting and switching back: docs/SWITCHING-MODELS.md.
 # Retrieval, embeddings (nomic-embed-text on host Ollama) and the index are unchanged, so a
 # run here compares models on the same retrieved passages. The default stays the dev overlay,
 # which needs no key.
