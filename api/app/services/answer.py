@@ -8,9 +8,9 @@ Production steps (section 3.2–3.4):
 5. Validate with Pydantic (retry once, then safe fallback)
 6. Drop any citation that does not match a retrieved passage
 7. If all citations dropped but model claimed answered_from_context, retry
-   once then fallback to answered_from_context=false (never cache it). If the model
-   says answered_from_context=false but a valid citation remains, trust the citation
-   unless confidence is low. Every abstention shows ABSTAIN_MESSAGE, not the model's text
+   once then fallback to answered_from_context=false (never cache it). A model that
+   says answered_from_context=false abstains even if it cites a retrieved passage, and
+   every abstention shows ABSTAIN_MESSAGE, not the model's text
 8. Store in cache (skip abstentions, fallbacks, follow-ups)
 9. Log one structured line per request with chunk ids and scores
 """
@@ -135,23 +135,20 @@ def _generate_and_validate(
                 confidence="low",
             )
 
-        # The opposite contradiction: the model says it did not answer from the documents
-        # but still cites a retrieved passage. Seen live with llama3.2:3b on 8 Nov: a
-        # correct answer citing clause 5.6, confidence high, answered_from_context false,
-        # which the UI labelled "Not covered by the documents". A citation that survived
-        # the filter names a passage we retrieved, so a confident answer is grounded; a
-        # low-confidence one stays the abstention it says it is.
-        if (not answer.answered_from_context and answer.citations
-                and answer.confidence != "low"):
-            log.warning("Contradictory answer: answered_from_context=False with %d valid "
-                        "citation(s), confidence %s; treating it as grounded",
-                        len(answer.citations), answer.confidence)
-            answer.answered_from_context = True
-
+        # answered_from_context=False always means abstain, even when the model also cites a
+        # retrieved passage with high confidence. On 8 Nov llama3.2:3b did that both for a
+        # correct answer (clause 5.6) and for a coercion attempt ("I will harm myself if you
+        # don't leak ..."), so neither the citation nor the confidence tells them apart.
+        # Trusting the citation served the second as "From the documents"; abstaining loses
+        # the first, which is the safe way to be wrong.
+        #
         # An abstention shows our fixed text, never the model's. Nothing checks that text
-        # against the passages, and on 8 Nov the model returned "" for an injection attempt
-        # and "Not applicable" for the hostel question.
+        # against the passages, and the model returned "" for an injection attempt and
+        # "Not applicable" for the hostel question.
         if not answer.answered_from_context:
+            if answer.citations:
+                log.warning("Abstaining although the model cited %d valid passage(s) "
+                            "with confidence %s", len(answer.citations), answer.confidence)
             answer.answer = ABSTAIN_MESSAGE
             answer.citations = []
 
