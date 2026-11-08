@@ -133,7 +133,9 @@ also committed as the first [`eval/baseline.json`](../eval/baseline.json).
 3. **The model, not the floor, did the abstaining.** Every question went to the LLM: the
    best similarity scores were 0.597 and 0.612 for the two hostel questions and 0.623 to
    0.888 for the answerable ones, all above the 0.50 floor. A floor near 0.615 would
-   separate them on this run, but the gap is 0.011, too thin to rely on alone.
+   separate them on this run, but the gap is 0.011, too thin to rely on alone. (The floor
+   was later raised to 0.58 to decline injection and coercion attempts, which score 0.55 to
+   0.56; see `docs/FAILURE-ANALYSIS.md`, stage D.)
 4. **The model is over-cautious.** 11 of 18 answers came back
    `answered_from_context: false`, including q07, q16 and q17 whose relevant passage was
    retrieved. No citations were dropped and no fallback fired: `llama3.2:3b` declined by

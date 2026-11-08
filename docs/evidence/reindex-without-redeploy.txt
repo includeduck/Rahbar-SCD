@@ -1,0 +1,78 @@
+# Re-index without redeploy (section 4.5; ADR 0001)
+# 8 Nov 2026, fresh-clone cluster (minikube profile rahbar-fresh), default stack (llama3.2:3b and
+# nomic-embed-text on host Ollama). The indexer Job builds a new collection, then moves the
+# rahbar-active pointer to it. The api never restarts: it re-reads the pointer every 15 s, and the
+# semantic cache is keyed by generation, so old answers stop being served after the switch.
+# One question asked every 30 s throughout, through the Ingress.
+#
+# Command: kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar   (= make index)
+
+== BEFORE  2026-11-08 13:21:15 UTC
+Chroma collections:
+  rahbar-active          count=0     generation=1794136882 active=rahbar-g1794136882 built_at=-
+  rahbar-g1794136882     count=710   generation=1794136882 active=- built_at=2026-11-08T11:21:22Z
+api pods:
+  POD                 READY   RESTARTS   STARTED
+api-d5fd4bf76-79cvl   true    0          2026-11-08T13:07:14Z
+api-d5fd4bf76-qrjgt   true    0          2026-11-08T13:07:17Z
+api-d5fd4bf76-tnwmz   true    0          2026-11-08T13:07:11Z
+  deployment revision: 7, observedGeneration: 7
+Same question twice (the second should come from the cache):
+  13:21:16  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:21:18  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+
+== RE-INDEX  kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
+job.batch/manual-reindex-1 created
+Asking every 30 s while the Job runs:
+  13:21:20  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:21:52  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:22:24  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:22:56  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:23:31  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:24:07  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:26:12  HTTP 200  X-Cache: miss  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:27:15  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:27:52  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:28:37  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:29:16  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:29:54  HTTP 200  X-Cache: hit  pointer: rahbar-g1794136882  '2.00' answered_from_context=True
+  13:30:37  HTTP 200  X-Cache: miss  pointer: rahbar-g1794144601  '2.00' answered_from_context=True
+  Job condition: SuccessCriteriaMet Complete after 559 s
+
+== AFTER  2026-11-08 13:30:38 UTC
+Indexer log (last lines):
+  {"ts": "2026-11-08T13:23:04Z", "logger": "rahbar.indexer", "msg": "chunked", "source": "fee-structure-page.html", "chunks": 9}
+  {"ts": "2026-11-08T13:23:04Z", "logger": "rahbar.indexer", "msg": "chunked", "source": "grading-page.html", "chunks": 7}
+  {"ts": "2026-11-08T13:23:17Z", "logger": "rahbar.indexer", "msg": "chunked", "source": "faculty-entrepreneurship-and-technical-start-ups-policy.pdf", "chunks": 6}
+  {"ts": "2026-11-08T13:30:02Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 710, "seconds": 514.8}
+Chroma collections:
+  rahbar-active          count=0     generation=1794144601 active=rahbar-g1794144601 built_at=-
+  rahbar-g1794136882     count=710   generation=1794136882 active=- built_at=2026-11-08T11:21:22Z
+  rahbar-g1794144601     count=710   generation=1794144601 active=- built_at=2026-11-08T13:30:01Z
+api pods:
+  POD                 READY   RESTARTS   STARTED
+api-d5fd4bf76-79cvl   true    0          2026-11-08T13:07:14Z
+api-d5fd4bf76-qrjgt   true    0          2026-11-08T13:07:17Z
+api-d5fd4bf76-tnwmz   true    0          2026-11-08T13:07:11Z
+  deployment revision: 7, observedGeneration: 7
+Same question twice after the switch (the cache is keyed by generation, so the first should miss):
+  13:31:00  HTTP 200  X-Cache: hit  pointer: rahbar-g1794144601  '2.00' answered_from_context=True
+  13:31:02  HTTP 200  X-Cache: hit  pointer: rahbar-g1794144601  '2.00' answered_from_context=True
+
+# What this shows
+# - 16 questions from 13:21:16 to 13:31:02 UTC, all HTTP 200, all answered "2.00" from the documents.
+# - The pointer moved from rahbar-g1794136882 to rahbar-g1794144601 between 13:29:54 and 13:30:37;
+#   the indexer finished at 13:30:02 (710 chunks, 514.8 s).
+# - The same three api pods served throughout: same names, 0 restarts, deployment revision 7 before
+#   and after. Nothing was redeployed.
+# - The first question after the switch (13:30:37) missed the cache, because entries are keyed by
+#   generation; the answer it wrote is what the last two questions hit.
+# - The old collection rahbar-g1794136882 is kept, so switching the pointer back is possible.
+#
+# The miss at 13:26:12 is not the switch. That request took 90.8 s (api log: retrieval 3.4 s,
+# generation 57.4 s). The api embeds the question once for the cache with a 30 s timeout
+# (api/app/retrieval/chroma.py); Ollama on the same laptop was busy embedding 710 chunks for the
+# indexer, so that call most likely timed out, the cache lookup was skipped, and retrieval embedded
+# the question again. 30 + 3.4 + 57.4 matches the 90.8 s. The failed embed is not logged
+# (api/app/routes/ask.py swallows it), so this is inferred from the timings. Lesson: on one laptop,
+# a re-index slows answers down; it does not break them.

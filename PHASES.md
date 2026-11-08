@@ -156,6 +156,7 @@ dummy index, and answers through the Ingress.
 - [x] `secret.placeholder.yaml` with `REPLACE_ME`, **not** listed in `kustomization.yaml`
 - [ ] ADR [`docs/adr/0001-indexer-as-job.md`](docs/adr/) **in our own words** (the marker reads
       it first). Wasay writes this one; the reasoning is in §4.2 and in the plan, D1
+      Status 8 Nov: Claude Code's draft with Wasay's edits (plain-language terms), disclosed in AI-USAGE
 
 **Done when:** `make images apply`, then `make ask Q="..."` returns the stub answer through the
 Ingress, and the dummy index survives deleting the Chroma pod. ✅ Verified 3 Nov: stub answer
@@ -388,18 +389,19 @@ At stake: −6 a publishing job without `needs:` or deploying `:latest`.
 
 **Owner:** both, written as we go · **Finish:** Sun 8 · (§7, §10) · **Status:** ⏳ Last items
 
-- [ ] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
+- [x] `README.md`: problem, CI badge, Mermaid architecture, **exact apply order**, clean clone
       → answered question, API endpoint table, screenshot (−5 if the apply order fails).
-      Left: the UI screenshot and a fresh-clone dry run of the apply order
+      Fresh-clone dry run on 8 Nov: all nine steps passed on a new minikube profile with no
+      README change; UI screenshot `docs/evidence/ui-answer-and-abstention.png`
 - [x] `docs/ARCHITECTURE.md` (why Chroma is a StatefulSet)
 - [x] `docs/PIPELINE.md`, `docs/FAILURE-ANALYSIS.md`, final `docs/CORPUS.md`
 - [x] `docs/ENGINEERING-NOTES.md`: all 7 questions **with our file paths and line numbers**
       (generic answers score zero). Note the "failure that cost us an hour" when it happens
-- [x] ADRs 0001–0004 (ADR 0001 still to be rewritten in Wasay's own words, §4.2)
-- [ ] `docs/AI-USAGE.md` complete, including what we changed (many rows still say "Pending our review")
-- [ ] `docs/evidence/` (≥ 5 files): ruleset (screenshot still to add), blocked merge (PR #13), `kubectl top`,
+- [x] ADRs 0001–0004 (ADR 0001: Claude Code's draft edited by Wasay on 8 Nov, disclosed in AI-USAGE)
+- [x] `docs/AI-USAGE.md` complete, including what we changed (Claude Code rows accepted without changes; ADR 0001 row open until the rewrite)
+- [x] `docs/evidence/` (≥ 5 files): ruleset (`branch-protection-ruleset-1..4.png` and `.json`), blocked merge (PR #13), `kubectl top`,
       `kubectl get endpoints`, `kubectl get hpa`, plus rollout/undo, pin demo, NetworkPolicy
-      test, pod deletion, re-index without redeploy
+      test, pod deletion, re-index without redeploy (`reindex-without-redeploy.txt`)
 
 ## Phase 13: Submission
 

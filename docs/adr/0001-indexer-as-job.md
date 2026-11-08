@@ -7,24 +7,27 @@ Accepted · 3 November 2026
 
 RAHBAR does two very different things.
 
-The first is building the index. We read nine PDFs and two web pages, OCR the scanned ones,
-clean the text, chunk it, embed every chunk and write it all into Chroma. That is slow and
-it eats memory. It only needs to happen once, and again when the documents change.
+The first is building the index. We read seven PDFs and two web pages, OCR the scanned ones,
+clean the text, split it into chunks, embed every chunk and write it all into Chroma. That
+is slow and it uses a lot of memory. It only needs to happen once, and again when the
+documents change.
 
 The second is answering questions. That happens on every request and has to be fast.
 
 The obvious shortcut is to build the index when the API starts. We don't do that, and here
-is why. Our API runs 3 replicas (`k8s/base/api.yaml`, line 12) and there is one Chroma
-volume. If indexing lived in API startup:
+is why. Our API runs 3 copies (replicas) (`k8s/base/api.yaml`, line 12) and there is one
+Chroma volume. If indexing lived in API startup:
 
 1. **Three pods would write to one index at the same time.** Each one is halfway through a
    different document. What ends up in Chroma is an index that no single run produced.
-2. **Every restart would re-index.** A rolling update, an OOMKill, a node drain, even one
-   failed probe: each one pays the full OCR and embedding cost again.
+2. **Every restart would re-index.** A rolling update (replacing pods one by one), an
+   OOMKill (the pod runs out of memory and is killed), a node drain (moving pods off a
+   machine), even one failed health check: each one pays the full OCR and embedding cost
+   again.
 3. **Readiness would lie.** Either the pod says "ready" before there is anything to
-   retrieve and serves empty answers, or it takes minutes to get ready and the startup probe
-   (30 tries × 2 s in `api.yaml`) kills it halfway. A rolling update would then swap three
-   working pods for three that are still chunking PDFs.
+   retrieve and serves empty answers, or it takes minutes to get ready and the startup
+   probe (health check, 30 tries × 2 s in `api.yaml`) kills it halfway. A rolling update
+   would then swap three working pods for three that are still chunking PDFs.
 4. **We couldn't re-index without a redeploy.** Changing the documents would mean
    restarting the API, which is backwards.
 
@@ -34,8 +37,9 @@ Indexing and serving are separate. The indexer writes, the API only reads.
 
 - **The indexer is its own image and its own Job** (`k8s/base/indexer-job.yaml`):
   `restartPolicy: OnFailure`, `backoffLimit: 4`, `activeDeadlineSeconds: 3600`. It runs the
-  five stages once and exits. An initContainer waits for Chroma's heartbeat first, so on a
-  fresh cluster the Job doesn't burn its retries while Chroma is still starting.
+  five stages once and exits. An initContainer (a setup container that runs before the main
+  one) waits for Chroma's heartbeat first, so on a fresh cluster the Job doesn't burn its
+  retries while Chroma is still starting.
 - **A weekly CronJob runs the same image with the same arguments**
   (`k8s/base/reindex-cronjob.yaml`, Sunday 03:00 PKT, `concurrencyPolicy: Forbid` so two
   indexers never overlap). Re-indexing by hand is one command, with no redeploy:

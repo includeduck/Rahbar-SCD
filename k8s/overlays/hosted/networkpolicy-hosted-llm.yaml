@@ -1,0 +1,27 @@
+# The api's only route to the internet, and only in this overlay: HTTPS to public addresses,
+# for the hosted LLM. The base policy gives the api Chroma, Redis and DNS and nothing else, so
+# without this every hosted call times out and falls back. Private ranges are excluded, so this
+# cannot reach other services in the cluster or on the local network. NetworkPolicy cannot name
+# a host, so this is any public HTTPS address, not just openrouter.ai.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-hosted-llm-egress
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

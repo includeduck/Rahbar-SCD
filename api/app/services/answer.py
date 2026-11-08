@@ -1,6 +1,7 @@
 """Turns a question into an AskResponse. This is where the query pipeline lives.
 
 Production steps (section 3.2–3.4):
+0. A question that mentions self-harm gets a fixed support message (services/safety.py)
 1. Check semantic cache → return on hit
 2. Retrieve top-k passages
 3. Check relevance floor → abstain if all scores are below the threshold
@@ -8,7 +9,9 @@ Production steps (section 3.2–3.4):
 5. Validate with Pydantic (retry once, then safe fallback)
 6. Drop any citation that does not match a retrieved passage
 7. If all citations dropped but model claimed answered_from_context, retry
-   once then fallback to answered_from_context=false (never cache it)
+   once then fallback to answered_from_context=false (never cache it). A model that
+   says answered_from_context=false abstains even if it cites a retrieved passage, and
+   every abstention shows ABSTAIN_MESSAGE, not the model's text
 8. Store in cache (skip abstentions, fallbacks, follow-ups)
 9. Log one structured line per request with chunk ids and scores
 """
@@ -26,6 +29,7 @@ from ..retrieval.base import Retriever
 from ..routes import metrics as prom
 from ..schemas import Answer, AskResponse, Citation, Passage, RetrievedRef
 from .cache import SemanticCache
+from .safety import SUPPORT_MESSAGE, mentions_self_harm
 
 log = logging.getLogger("rahbar.answer")
 
@@ -37,6 +41,10 @@ GENERATE_RETRIES = 1
 
 
 FALLBACK_MESSAGE = "I was unable to generate a reliable answer. Please rephrase or try again."
+
+# Every abstention, whether from the relevance floor or from the model, shows this text.
+ABSTAIN_MESSAGE = ("I don't have enough relevant information in the available "
+                   "documents to answer this question.")
 
 
 def _safe_fallback() -> Answer:
@@ -129,6 +137,23 @@ def _generate_and_validate(
                 confidence="low",
             )
 
+        # answered_from_context=False always means abstain, even when the model also cites a
+        # retrieved passage with high confidence. Measured on 8 Nov with llama3.2:3b
+        # (eval/compare_flag_rules.py, docs/evidence/flag-rule-comparison.txt): such answers
+        # were right in 3 of 5 cases ("100%" attendance, clause 5.6, FYP credits) and wrong
+        # in 2 ("a maximum of two courses in a semester", read from the summer rule). A
+        # missed answer is the safe way to be wrong.
+        #
+        # An abstention shows our fixed text, never the model's. Nothing checks that text
+        # against the passages, and the model returned "" for an injection attempt and
+        # "Not applicable" for the hostel question.
+        if not answer.answered_from_context:
+            if answer.citations:
+                log.warning("Abstaining although the model cited %d valid passage(s) "
+                            "with confidence %s", len(answer.citations), answer.confidence)
+            answer.answer = ABSTAIN_MESSAGE
+            answer.citations = []
+
         return answer
 
     # Should not reach here, but be safe
@@ -147,6 +172,21 @@ def answer_question(
     """Return ``(response, was_cache_hit)``."""
     retrieval_ms = 0.0
     generation_ms = 0.0
+
+    # 0. Self-harm check: a fixed support message, before the cache, retrieval and the
+    #    LLM. The question text is not logged.
+    if mentions_self_harm(question):
+        prom.SUPPORT_REPLIES.inc()
+        log.info("support_reply", extra={"reason": "self_harm_phrase"})
+        return AskResponse(
+            request_id=request_id_var.get(),
+            answer=SUPPORT_MESSAGE,
+            citations=[],
+            answered_from_context=False,
+            confidence="low",
+            retrieved=[],
+            provider=provider.name,
+        ), False
 
     # 1. Semantic cache lookup
     if cache is not None and not cache.should_skip_cache(question):
@@ -199,8 +239,7 @@ def answer_question(
         })
         return AskResponse(
             request_id=request_id_var.get(),
-            answer="I don't have enough relevant information in the available "
-                   "documents to answer this question.",
+            answer=ABSTAIN_MESSAGE,
             citations=[],
             answered_from_context=False,
             confidence="low",

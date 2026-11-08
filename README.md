@@ -158,6 +158,11 @@ purpose; the answer comes back with `"answered_from_context": false`:
 make ask Q="How do I apply for a hostel room?"
 ```
 
+Both in the chat page (the default stack, `llama3.2:3b` on host Ollama, 8 Nov 2026): an answer with its source,
+and a question the documents do not cover.
+
+![The RAHBAR chat page: "What CGPA puts a student on academic warning?" answered 2.00 from clause 5.4 of the academic rules handbook, and "How do I apply for a hostel room?" declined as not covered by the documents](docs/evidence/ui-answer-and-abstention.png)
+
 **9. Delete an api pod and keep asking.** Nothing breaks: the other two keep serving, the
 Service only sends traffic to ready pods, and the Deployment replaces the deleted one.
 
@@ -177,6 +182,9 @@ kubectl create job --from=cronjob/reindex manual-reindex-1 -n rahbar
 (`make index` does the same with a timestamped name.) The `reindex` CronJob also runs weekly,
 Sunday 03:00 PKT.
 
+Captured on 8 Nov: 16 questions during and after a re-index all answered, the pointer moved to the new
+generation, and the api pods never restarted ([`docs/evidence/reindex-without-redeploy.txt`](docs/evidence/reindex-without-redeploy.txt)).
+
 ## API
 
 | Method | Path | Purpose |
@@ -184,8 +192,10 @@ Sunday 03:00 PKT.
 | POST | `/api/ask` | `{"question": "..."}` (3 to 500 characters) → answer, citations, `answered_from_context`, `confidence`, the retrieved passages. Echoes `X-Request-ID`; `X-Cache: hit\|miss` |
 | GET | `/healthz` | Liveness: the process is alive. Touches no dependency |
 | GET | `/readyz` | Readiness: Chroma reachable, collection non-empty, embedding model matches, Redis reachable; otherwise 503 naming the failure |
-| GET | `/metrics` | Prometheus metrics: request count and latency by route, retrieval and generation latency, cache hits and misses, abstentions, fallbacks, tokens in and out |
+| GET | `/metrics` | Prometheus metrics: request count and latency by route, retrieval and generation latency, cache hits and misses, abstentions, fallbacks, support replies, tokens in and out |
 | GET | `/docs` | Interactive API documentation (FastAPI) |
+
+A question that mentions self-harm (`api/app/services/safety.py`, a phrase list in English, Roman Urdu and Urdu) gets a fixed support message pointing to people on campus and Rescue 1122. It skips the cache, retrieval and the model, and the question text is not logged. Every other abstention shows one fixed message too, never the model's own text.
 
 ## Configuration
 
@@ -200,6 +210,8 @@ Both programs read environment variables only, from the `rahbar-config` ConfigMa
 | `CHUNK_SIZE`, `CHUNK_OVERLAP`, `CORPUS_DIR` | indexer | Chunking (words) and where the documents are |
 | `CHROMA_HOST`, `REDIS_URL`, `OLLAMA_URL` | api, indexer | Service addresses |
 | `LLM_API_KEY` | api | Secret only, hosted mode only |
+
+**Switching the generation model.** [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) has the exact steps: to a hosted model on OpenRouter with the opt-in overlay [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml), back to the default, to another Ollama model, how to measure a model, and what each failure looks like. In hosted mode the question and three document excerpts leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered, so the default stays on Ollama. `EMBED_MODEL` is different: changing it needs a re-index.
 
 ## Corpus
 
@@ -253,7 +265,8 @@ Work happens on `dev`.
 | [`docs/PIPELINE.md`](docs/PIPELINE.md) | The indexing stages and chunking measurements |
 | [`docs/FAILURE-ANALYSIS.md`](docs/FAILURE-ANALYSIS.md) | Failure injection and recovery across extraction, chunking, retrieval, generation, and superseded filtering |
 | [`docs/ENGINEERING-NOTES.md`](docs/ENGINEERING-NOTES.md) | Detailed answers to the seven engineering and scaling case study questions with exact file paths and line numbers |
+| [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) | Switching the generation model: hosted on OpenRouter, back to Ollama, another Ollama model, measuring, troubleshooting |
 | [`docs/adr/`](docs/adr) | Architecture decision records (ADRs 0001–0004) |
-| [`docs/evidence/`](docs/evidence) | Command output behind every claim: NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile |
+| [`docs/evidence/`](docs/evidence) | Command output and screenshots behind every claim: branch-protection ruleset, CI gate demo, NetworkPolicy, embedding pin, rollout and undo, endpoints, HPA, pod deletion, real pipeline run, indexer memory profile, measurements (chunking, cache threshold, flag rule, hosted model), the chat page |
 | [`docs/AI-USAGE.md`](docs/AI-USAGE.md) | Which AI tools wrote or shaped what, and what we changed |
 | [`PHASES.md`](PHASES.md) | The plan, phase by phase, with what is done |
