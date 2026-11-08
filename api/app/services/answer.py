@@ -8,7 +8,9 @@ Production steps (section 3.2–3.4):
 5. Validate with Pydantic (retry once, then safe fallback)
 6. Drop any citation that does not match a retrieved passage
 7. If all citations dropped but model claimed answered_from_context, retry
-   once then fallback to answered_from_context=false (never cache it)
+   once then fallback to answered_from_context=false (never cache it). If the model
+   says answered_from_context=false but a valid citation remains, trust the citation
+   unless confidence is low, in which case drop the citations (an abstention)
 8. Store in cache (skip abstentions, fallbacks, follow-ups)
 9. Log one structured line per request with chunk ids and scores
 """
@@ -128,6 +130,22 @@ def _generate_and_validate(
                 answered_from_context=False,
                 confidence="low",
             )
+
+        # The opposite contradiction: the model says it did not answer from the documents
+        # but still cites a retrieved passage. Seen live with llama3.2:3b on 8 Nov: a
+        # correct answer citing clause 5.6, confidence high, answered_from_context false,
+        # which the UI labelled "Not covered by the documents". A citation that survived
+        # the filter names a passage we retrieved, so a confident answer is grounded; a
+        # low-confidence one is the abstention it says it is, without citations.
+        if not answer.answered_from_context and answer.citations:
+            log.warning("Contradictory answer: answered_from_context=False with %d valid "
+                        "citation(s), confidence %s; treating it as %s",
+                        len(answer.citations), answer.confidence,
+                        "an abstention" if answer.confidence == "low" else "grounded")
+            if answer.confidence == "low":
+                answer.citations = []
+            else:
+                answer.answered_from_context = True
 
         return answer
 

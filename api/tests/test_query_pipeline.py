@@ -329,6 +329,34 @@ class TestAnswerPipeline:
         # Cache should be empty (never cached an ungrounded answer)
         assert cache.get("test?", vec) is None
 
+    def test_cited_answer_flagged_false_is_treated_as_grounded(self) -> None:
+        """Seen live: the model answered from a retrieved clause and cited it, but set
+        answered_from_context=False, so the UI said "Not covered by the documents"."""
+        contradictory = _answer(answered_from_context=False, confidence="high")
+        provider = FakeProvider(contradictory)
+        resp, _ = answer_question("What is academic warning?", FakeRetriever(), provider,
+                                  SETTINGS)
+        assert resp.answered_from_context is True
+        assert [c.section for c in resp.citations] == ["5.4 Academic Warning"]
+        assert resp.answer == contradictory.answer
+        assert provider._call_count == 1
+
+    def test_low_confidence_cited_answer_flagged_false_stays_an_abstention(self) -> None:
+        contradictory = _answer(answered_from_context=False, confidence="low",
+                                answer="The documents do not say.")
+        resp, _ = answer_question("Is there a hostel?", FakeRetriever(),
+                                  FakeProvider(contradictory), SETTINGS)
+        assert resp.answered_from_context is False
+        assert resp.citations == []
+
+    def test_abstention_with_only_invalid_citations_stays_an_abstention(self) -> None:
+        abstain = _answer(answered_from_context=False, confidence="high",
+                          answer="Cannot answer from available documents.",
+                          citations=[Citation(source="made-up.pdf", section="9.9", page=1)])
+        resp, _ = answer_question("hello", FakeRetriever(), FakeProvider(abstain), SETTINGS)
+        assert resp.answered_from_context is False
+        assert resp.citations == []
+
     def test_prompt_injection_with_poisoned_chunk(self) -> None:
         """A passage that tries to override system instructions should
         not change the model's behaviour. The prompt explicitly tells
