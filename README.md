@@ -238,7 +238,7 @@ any must-abstain question is answered, or when citation validity drops below 95 
 | [`ci.yml`](.github/workflows/ci.yml) | pull requests to `main`, pushes to `dev` | `lint` (ruff, mypy), `test` (pytest, coverage ≥ 60 %), `manifests` (kubeconform `-strict`), `build` (no push), `scan` (Trivy), `e2e-eval` (in-cluster Ollama, fixture corpus, eval gate) |
 | [`cd.yml`](.github/workflows/cd.yml) | pushes to `main` | `test` → `build-push` (Docker Hub, tagged with the commit SHA) → `deploy` (kind, rollout status, smoke test through the Ingress) |
 
-- A green CD run on `main`: [run 42402399118](https://github.com/includeduck/Rahbar-SCD/actions/runs/42402399118) (commit `5e11361`, 7 November)
+- A green CD run on `main`: [run 42425319008](https://github.com/includeduck/Rahbar-SCD/actions/runs/42425319008) (commit `56324cb`, the merge of PR #12, 7 November)
 - Images, tagged by commit SHA, never `:latest`: [hub.docker.com/u/mwasaytariq](https://hub.docker.com/u/mwasaytariq)
 
 `main` is protected: pull request, passing checks and one approval required, no bypass.
