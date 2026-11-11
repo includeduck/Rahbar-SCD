@@ -64,9 +64,13 @@ docs/        CORPUS, PIPELINE, ARCHITECTURE, ADRs, evidence/, AI-USAGE
 - `make` and bash (Linux, macOS, or WSL 2 on Windows), Python 3.12
 - [Ollama](https://ollama.com) on the host, for embeddings and generation
 
-On Windows, run `make` inside WSL 2, or type the commands each target prints. If your
-distribution's `python3` is newer than 3.12, install 3.12 (for example with
-`uv python install 3.12`) and run `make install PY="$(uv python find 3.12)"`.
+On Windows, either run `make` inside WSL 2, or type the commands each target prints
+(`make -n <target>` shows them) in the shell where minikube is installed. `make` only runs
+those commands, so for the WSL route minikube and `kubectl` must be installed inside WSL as
+well, with Docker Desktop's WSL integration turned on for your distribution; a minikube
+installed on Windows is not visible to `make` in WSL. If your distribution's `python3` is
+newer than 3.12, install 3.12 (for example with `uv python install 3.12`) and run
+`make install PY="$(uv python find 3.12)"`.
 
 ## Without a cluster
 
@@ -105,6 +109,13 @@ ollama pull nomic-embed-text
 We embed through the same Ollama host we generate through: `nomic-embed-text` (768
 dimensions) for both the indexer and the api, pinned in one ConfigMap key.
 
+**minikube running inside WSL 2 with Docker Desktop:** there, `host.minikube.internal` points
+at the cluster's own Docker network gateway (192.168.49.1 for the default profile when we
+checked on 11 Nov), not at Windows, so the cluster cannot reach Ollama through it. `host.docker.internal`
+(192.168.65.254) does reach it, from the node and from pods. Step 5 shows how to apply with
+that address. A minikube installed on Windows resolves `host.minikube.internal` to
+192.168.65.254 and needs no change.
+
 **3. Build the three images and load them into minikube** (minikube cannot see images in
 your own Docker):
 
@@ -128,6 +139,18 @@ make secret
 kubectl apply -k k8s/overlays/dev
 ```
 
+With minikube inside WSL 2 (see step 2), apply with the Ollama address replaced instead. It
+changes only `OLLAMA_URL` in the ConfigMap, and the dev overlay's NetworkPolicy already allows
+192.168.65.254:
+
+```bash
+kubectl kustomize k8s/overlays/dev | sed 's#http://host.minikube.internal:11434#http://host.docker.internal:11434#' | kubectl apply -f -
+```
+
+Use this form every time you apply on such a cluster: a plain `kubectl apply -k` puts the old
+address back. Patching the ConfigMap after applying is a race: the indexer Job starts at the
+same moment and reads the address when its container starts.
+
 **6. Wait for the indexer Job, then for the api.** The Job first downloads the nine
 documents into the `corpus-data` volume and checks each against
 [`corpus/MANIFEST.md`](corpus/MANIFEST.md), then builds the index (about 9 minutes on a
@@ -138,6 +161,12 @@ exists, is not empty and matches `EMBED_MODEL`:
 kubectl -n rahbar wait --for=condition=complete job/indexer --timeout=30m
 kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
+
+If the index takes longer than 10 minutes, `rollout status` stops at once with "exceeded its
+progress deadline": the api Deployment uses Kubernetes' default 600 s deadline and cannot be
+ready before the index exists. Nothing is wrong. The pods turn ready a few seconds after the
+Job finishes; check with `kubectl -n rahbar get pods`. (On 11 Nov, in WSL, the index took
+578.5 s and the pods were ready 8 s later.)
 
 **7. Reach the Ingress and ask.** On Linux the Ingress is at `$(minikube ip)`. On macOS or
 Windows with the docker driver, run `minikube tunnel` in another terminal (an administrator
@@ -150,6 +179,23 @@ make ask INGRESS_IP=127.0.0.1 Q="What CGPA puts a student on academic warning?"
 
 To use the chat page in a browser, add `<ingress ip> rahbar.local` to your hosts file and
 open `http://rahbar.local`.
+
+With minikube inside WSL 2, `$(minikube ip)` cannot be reached from WSL or from Windows (the
+cluster's network lives inside Docker Desktop). Forward the ingress controller instead, in
+another WSL terminal, and ask through it:
+
+```bash
+kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+```
+```bash
+make ask INGRESS_IP=127.0.0.1:8080 Q="What CGPA puts a student on academic warning?"
+```
+
+WSL forwards its `localhost` to Windows, so for the browser add `127.0.0.1 rahbar.local` to
+the Windows hosts file and open `http://rahbar.local:8080`. Without that line the browser
+waits and then reports that the site took too long to respond: Windows looks up `.local`
+names on the local network, and nothing answers. (`minikube tunnel` inside WSL was not
+tried.)
 
 **8. Ask about something the documents do not cover.** Hostel rules are left out on
 purpose; the answer comes back with `"answered_from_context": false`:
