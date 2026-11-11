@@ -93,3 +93,8 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+  # The api cannot be ready before the index exists, and on a fresh cluster the indexer Job
+  # takes about 9 minutes (578.5 s in WSL on 11 Nov). Kubernetes' default 600 s deadline then
+  # marks the first rollout as failed although the pods turn ready seconds later; 20 minutes
+  # leaves room. Kept at the end of the spec so the line numbers cited in the docs stay put.
+  progressDeadlineSeconds: 1200

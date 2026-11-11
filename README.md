@@ -162,11 +162,11 @@ kubectl -n rahbar wait --for=condition=complete job/indexer --timeout=30m
 kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
 
-If the index takes longer than 10 minutes, `rollout status` stops at once with "exceeded its
-progress deadline": the api Deployment uses Kubernetes' default 600 s deadline and cannot be
-ready before the index exists. Nothing is wrong. The pods turn ready a few seconds after the
-Job finishes; check with `kubectl -n rahbar get pods`. (On 11 Nov, in WSL, the index took
-578.5 s and the pods were ready 8 s later.)
+The api cannot be ready before the index exists, so its Deployment allows a 20-minute rollout
+(`progressDeadlineSeconds: 1200` in `k8s/base/api.yaml`). With Kubernetes' default of
+10 minutes, a slow index made `rollout status` report "exceeded its progress deadline" even
+though the pods turned ready seconds later (on 11 Nov, in WSL, the index took 578.5 s). If
+you still see that message, check `kubectl -n rahbar get pods` before assuming a failure.
 
 **7. Reach the Ingress and ask.** On Linux the Ingress is at `$(minikube ip)`. On macOS or
 Windows with the docker driver, run `minikube tunnel` in another terminal (an administrator
