@@ -209,6 +209,15 @@ and a question the documents do not cover.
 
 ![The RAHBAR chat page: "What CGPA puts a student on academic warning?" answered 2.00 from clause 5.4 of the academic rules handbook, and "How do I apply for a hostel room?" declined as not covered by the documents](docs/evidence/ui-answer-and-abstention.png)
 
+**Ask in English, or at least use English for the key words.** The documents are in English
+and the embedding model (`nomic-embed-text`) matches English words only. On 11 Nov, "What is
+the university's policy regarding smoking?" found the Code of Conduct first, and "University
+ki *smoking* ke upr kya policy hai?" still found it, because the key word was English. "University
+ki *tumbaku-noshi* ke upr kya policy hai?" (Roman Urdu) and the same question in Urdu script
+found nothing about smoking, so RAHBAR declined them as not covered. It declines rather than
+guessing, but a question in Urdu or Roman Urdu with an Urdu key word will usually not be
+answered even when the documents cover it.
+
 **9. Delete an api pod and keep asking.** Nothing breaks: the other two keep serving, the
 Service only sends traffic to ready pods, and the Deployment replaces the deleted one.
 
