@@ -1,0 +1,23 @@
+# The dev overlay for minikube running inside WSL 2 on Docker Desktop.
+#   kubectl apply -k k8s/overlays/dev-wsl
+#
+# The only difference is how the cluster reaches Ollama on Windows. A minikube installed in
+# WSL resolves host.minikube.internal to its own Docker network gateway (192.168.49.1 for the
+# default profile), where nothing listens, while host.docker.internal is Docker Desktop's route
+# to Windows (192.168.65.254) and reaches Ollama from the node and from pods (tested 11 Nov).
+# The dev overlay's NetworkPolicy already allows 192.168.65.254, so nothing else changes.
+# A minikube installed on Windows needs the plain dev overlay.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../dev
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: rahbar-config
+    patch: |-
+      - op: replace
+        path: /data/OLLAMA_URL
+        value: http://host.docker.internal:11434

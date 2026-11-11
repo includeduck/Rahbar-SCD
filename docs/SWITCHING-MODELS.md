@@ -59,6 +59,13 @@ the api no internet access at all, so without that policy every hosted call time
 kubectl apply -k k8s/overlays/hosted
 ```
 
+On minikube inside WSL 2 (README step 2), the hosted overlay would put back the Ollama address
+that WSL cannot reach, so render it with `host.docker.internal` instead (tested on 11 Nov):
+
+```bash
+kubectl kustomize k8s/overlays/hosted | sed 's#http://host.minikube.internal:11434#http://host.docker.internal:11434#' | kubectl apply -f -
+```
+
 ```bash
 kubectl -n rahbar rollout restart deploy/api && kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
@@ -100,6 +107,8 @@ so remove the hosted egress policy by hand:
 ```bash
 kubectl apply -k k8s/overlays/dev
 ```
+
+(On minikube inside WSL 2, apply `k8s/overlays/dev-wsl` instead.)
 
 ```bash
 kubectl -n rahbar delete networkpolicy allow-api-hosted-llm-egress

@@ -139,17 +139,17 @@ make secret
 kubectl apply -k k8s/overlays/dev
 ```
 
-With minikube inside WSL 2 (see step 2), apply with the Ollama address replaced instead. It
-changes only `OLLAMA_URL` in the ConfigMap, and the dev overlay's NetworkPolicy already allows
-192.168.65.254:
+With minikube inside WSL 2 (see step 2), apply the `dev-wsl` overlay instead. It is the dev
+overlay with only `OLLAMA_URL` changed to `host.docker.internal`, and the dev overlay's
+NetworkPolicy already allows that address:
 
 ```bash
-kubectl kustomize k8s/overlays/dev | sed 's#http://host.minikube.internal:11434#http://host.docker.internal:11434#' | kubectl apply -f -
+kubectl apply -k k8s/overlays/dev-wsl
 ```
 
-Use this form every time you apply on such a cluster: a plain `kubectl apply -k` puts the old
-address back. Patching the ConfigMap after applying is a race: the indexer Job starts at the
-same moment and reads the address when its container starts.
+Use it every time you apply on such a cluster: applying `dev` puts the old address back.
+Patching the ConfigMap after applying is a race: the indexer Job starts at the same moment and
+reads the address when its container starts.
 
 **6. Wait for the indexer Job, then for the api.** The Job first downloads the nine
 documents into the `corpus-data` volume and checks each against
