@@ -61,7 +61,11 @@ print(f"  confidence:            {answer.confidence}")
 print(f"  citations:             {[f'{c.source} | {c.section}' for c in answer.citations]}")
 print(f"  citations that match a passage it was given: {len(kept)} of {len(answer.citations)}")
 
-if not answer.answered_from_context and kept:
+if answer.reasoning.startswith("fallback:"):
+    verdict = ("the provider failing, not the model's judgement. The call errored or returned "
+               "something that is not the answer schema, so the safe fallback was used; the api "
+               "log line 'Falling back after ...' gives the HTTP status or validation error")
+elif not answer.answered_from_context and kept:
     verdict = ("the abstain-on-false rule. The model flagged its answer as not from the "
                "documents but cited a passage it was given; the api abstains whenever the flag is "
                "false (docs/evidence/flag-rule-comparison.txt)")
