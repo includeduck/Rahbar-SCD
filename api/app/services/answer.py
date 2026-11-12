@@ -177,7 +177,10 @@ def answer_question(
     #    LLM. The question text is not logged.
     if mentions_self_harm(question):
         prom.SUPPORT_REPLIES.inc()
-        log.info("support_reply", extra={"reason": "self_harm_phrase"})
+        log.info("support_reply", extra={
+            "reason": "self_harm_phrase", "top_k": settings.top_k, "chunk_ids": [],
+            "scores": [], "answered_from_context": False,
+        })
         return AskResponse(
             request_id=request_id_var.get(),
             answer=SUPPORT_MESSAGE,
@@ -193,9 +196,15 @@ def answer_question(
         cached = cache.get(question, query_vec)
         if cached is not None:
             prom.CACHE_HITS.inc()
+            # The same fields as the "answered" line, from the cached response; the
+            # question text is not logged.
             log.info("cache_hit", extra={
-                "question": question[:80],
                 "request_id": request_id_var.get(),
+                "top_k": settings.top_k,
+                "chunk_ids": [r.chunk_id for r in cached.retrieved],
+                "scores": [round(r.score, 4) for r in cached.retrieved],
+                "answered_from_context": cached.answered_from_context,
+                "cache": "hit",
             })
             cached.request_id = request_id_var.get()
             return cached, True
@@ -234,8 +243,13 @@ def answer_question(
         prom.ABSTENTIONS.inc()
         log.info("abstaining", extra={
             "reason": "below_relevance_floor",
-            "top_score": passages[0].score if passages else 0.0,
+            "retriever": retriever.name,
+            "top_k": settings.top_k,
+            "chunk_ids": [p.chunk_id for p in passages],
+            "scores": [round(p.score, 4) for p in passages],
+            "answered_from_context": False,
             "floor": relevance_floor,
+            "retrieval_ms": round(retrieval_ms, 1),
         })
         return AskResponse(
             request_id=request_id_var.get(),

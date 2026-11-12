@@ -7,6 +7,7 @@ are mocked with fake objects.
 from __future__ import annotations
 
 import json
+import logging
 
 import pytest
 from pydantic import ValidationError
@@ -627,3 +628,49 @@ class TestMetricsRecording:
         initial_hits = prom.CACHE_HITS._value.get()
         answer_question("What is X?", FakeRetriever(), FakeProvider(), SETTINGS, cache=cache, query_vec=[1.0, 0.0])
         assert prom.CACHE_HITS._value.get() == initial_hits + 1
+
+
+# ---------------------------------------------------------------------------
+# One log line per request (rubric H): top_k, chunk ids, scores, abstention flag
+# ---------------------------------------------------------------------------
+
+class TestRequestLogLine:
+    FIELDS = ("top_k", "chunk_ids", "scores", "answered_from_context")
+
+    def _line(self, caplog: pytest.LogCaptureFixture, msg: str) -> logging.LogRecord:
+        records = [r for r in caplog.records if r.name == "rahbar.answer" and r.getMessage() == msg]
+        assert len(records) == 1, [r.getMessage() for r in caplog.records]
+        return records[0]
+
+    def test_answered_line(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.INFO, logger="rahbar.answer"):
+            answer_question("What is academic warning?", FakeRetriever(), FakeProvider(), SETTINGS)
+        rec = self._line(caplog, "answered")
+        assert all(hasattr(rec, f) for f in self.FIELDS)
+        assert rec.chunk_ids == ["chunk-001"] and rec.answered_from_context is True
+
+    def test_floor_abstention_line(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.INFO, logger="rahbar.answer"):
+            answer_question("hostel?", FakeRetriever([_passage(score=0.1)]), FakeProvider(),
+                            SETTINGS)
+        rec = self._line(caplog, "abstaining")
+        assert all(hasattr(rec, f) for f in self.FIELDS)
+        assert rec.chunk_ids == ["chunk-001"] and rec.scores == [0.1]
+        assert rec.answered_from_context is False
+
+    def test_cache_hit_line_has_the_fields_and_not_the_question(
+            self, caplog: pytest.LogCaptureFixture) -> None:
+        cache = SemanticCache(FakeRedis(), SETTINGS)
+        cache._generation_id = "g"
+        cache._generation_read_at = 1e18
+        vec = [1.0, 0.0, 0.0]
+        answer_question("What is academic warning?", FakeRetriever(), FakeProvider(), SETTINGS,
+                        cache=cache, query_vec=vec)
+        with caplog.at_level(logging.INFO, logger="rahbar.answer"):
+            _, hit = answer_question("What is academic warning?", FakeRetriever(), FakeProvider(),
+                                     SETTINGS, cache=cache, query_vec=vec)
+        assert hit is True
+        rec = self._line(caplog, "cache_hit")
+        assert all(hasattr(rec, f) for f in self.FIELDS)
+        assert rec.chunk_ids == ["chunk-001"]
+        assert not hasattr(rec, "question")
