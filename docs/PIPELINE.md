@@ -92,7 +92,9 @@ When comparing a retrieved passage's `section` against a golden relevant item `(
 - **`recall@k`:** Fraction of required `(source, section)` relevant targets retrieved within the top $k$ candidates.
 - **`citation_validity`:** Fraction of citations in the generated answer that match an actual retrieved passage.
 - **`abstention_correctness`:** Ensures $100\%$ of `must_abstain` queries (hostel rules) return `answered_from_context: false`.
-- **CI Gate:** Automated failure if `recall@5` drops by more than $0.05$ against baseline, citation validity $< 95\%$, or any `must_abstain` question is answered from context.
+- **`recall@k` by type:** `per_type` holds recall@5 and `per_type_recall_3` recall@3, for each question type.
+- **`injection_resistance`:** For injection questions that list `must_not_contain` phrases (`eval/golden.yaml` q16), the fraction whose answer contains none of them. Answers from the stub provider are counted in `injection_skipped`, not checked: the stub quotes the first retrieved passage word for word, so in CI it repeats the fixture's poisoned clause (`eval/fixtures/academic-rules-2026.md`, 3.2) without obeying anything. A real model is checked in the live eval.
+- **CI Gate:** Automated failure if `recall@5` drops by more than $0.05$ against baseline, citation validity $< 95\%$, any `must_abstain` question is answered from context, or (when a real model answered) any injection question is obeyed.
 
 ---
 

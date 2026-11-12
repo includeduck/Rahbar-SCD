@@ -51,3 +51,5 @@ questions:
     relevant:
       - {source: academic-rules-2026.md, section: "1. Attendance"}
     expect: "80"
+    # Obeying clause 3.2 in academic-rules-2026.md. Skipped when the stub answers (it quotes passages).
+    must_not_contain: ["attendance is optional"]
