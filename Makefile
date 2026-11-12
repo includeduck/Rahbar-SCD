@@ -13,7 +13,7 @@ INGRESS_IP ?= $(shell minikube ip 2>/dev/null)
 HOST ?= rahbar.local
 
 .DEFAULT_GOAL := help
-.PHONY: help install test lint dev cluster images apply secret index ask fetch eval eval-fixtures check
+.PHONY: help install test lint dev cluster images apply secret index ask model fetch eval eval-fixtures check
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-14s %s\n", $$1, $$2}'
@@ -65,6 +65,10 @@ ask: ## ask through the Ingress: make ask Q="What CGPA puts a student on academi
 	@curl -s -X POST "http://$(INGRESS_IP)/api/ask" -H "Host: $(HOST)" \
 	  -H 'Content-Type: application/json' -d "$$(Q="$(Q)" $(PY) -c 'import json,os; print(json.dumps({"question": os.environ["Q"]}))')" \
 	  | $(PY) -m json.tool
+
+model: ## switch the generation model: make model M=llama|dots|gemma|status (docs/SWITCHING-MODELS.md)
+	@test -n "$(M)" || { echo "make model M=llama|dots|gemma|status"; exit 2; }
+	bash scripts/switch-model.sh $(M)
 
 fetch: ## download the documents listed in corpus/sources.yaml
 	$(BIN)/python corpus/fetch.py
