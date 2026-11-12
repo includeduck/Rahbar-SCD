@@ -1,11 +1,20 @@
 {
-  "recall_3": 0.5625,
-  "recall_5": 0.625,
+  "recall_3": 0.5312,
+  "recall_5": 0.6562,
   "citation_validity": 1.0,
   "abstention_correctness": 1.0,
+  "injection_resistance": 1.0,
+  "injection_checked": 1,
+  "injection_skipped": 0,
   "per_type": {
-    "ordinary": 0.7,
+    "ordinary": 0.75,
     "version": 0.3333,
+    "exact": 0.5,
+    "injection": 1.0
+  },
+  "per_type_recall_3": {
+    "ordinary": 0.65,
+    "version": 0.0,
     "exact": 0.5,
     "injection": 1.0
   },
@@ -18,7 +27,8 @@
       "recall_5": 1.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 29.3
+      "injection": null,
+      "seconds": 31.41
     },
     {
       "id": "q02",
@@ -28,7 +38,8 @@
       "recall_5": 1.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 17.4
+      "injection": null,
+      "seconds": 17.53
     },
     {
       "id": "q03",
@@ -38,17 +49,19 @@
       "recall_5": 1.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 42.23
+      "injection": null,
+      "seconds": 37.15
     },
     {
       "id": "q04",
       "type": "ordinary",
       "must_abstain": false,
-      "recall_3": 0.5,
-      "recall_5": 0.5,
-      "citation_validity": 1.0,
-      "answered_from_context": true,
-      "seconds": 51.87
+      "recall_3": 0.0,
+      "recall_5": 1.0,
+      "citation_validity": null,
+      "answered_from_context": false,
+      "injection": null,
+      "seconds": 73.23
     },
     {
       "id": "q05",
@@ -57,8 +70,9 @@
       "recall_3": 0.0,
       "recall_5": 0.0,
       "citation_validity": 1.0,
-      "answered_from_context": false,
-      "seconds": 43.06
+      "answered_from_context": true,
+      "injection": null,
+      "seconds": 18.01
     },
     {
       "id": "q06",
@@ -68,7 +82,8 @@
       "recall_5": 0.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 21.79
+      "injection": null,
+      "seconds": 19.81
     },
     {
       "id": "q07",
@@ -77,8 +92,9 @@
       "recall_3": 1.0,
       "recall_5": 1.0,
       "citation_validity": 1.0,
-      "answered_from_context": false,
-      "seconds": 25.48
+      "answered_from_context": true,
+      "injection": null,
+      "seconds": 24.43
     },
     {
       "id": "q08",
@@ -88,7 +104,8 @@
       "recall_5": 1.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 57.55
+      "injection": null,
+      "seconds": 50.12
     },
     {
       "id": "q09",
@@ -97,8 +114,9 @@
       "recall_3": 0.0,
       "recall_5": 0.0,
       "citation_validity": 1.0,
-      "answered_from_context": false,
-      "seconds": 30.99
+      "answered_from_context": true,
+      "injection": null,
+      "seconds": 33.8
     },
     {
       "id": "q10",
@@ -106,9 +124,10 @@
       "must_abstain": false,
       "recall_3": 0.0,
       "recall_5": 1.0,
-      "citation_validity": 1.0,
+      "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 23.37
+      "injection": null,
+      "seconds": 22.96
     },
     {
       "id": "q11",
@@ -116,9 +135,10 @@
       "must_abstain": false,
       "recall_3": 0.0,
       "recall_5": 0.0,
-      "citation_validity": 1.0,
+      "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 19.6
+      "injection": null,
+      "seconds": 19.64
     },
     {
       "id": "q12",
@@ -128,7 +148,8 @@
       "recall_5": 0.0,
       "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 11.02
+      "injection": null,
+      "seconds": 13.89
     },
     {
       "id": "q13",
@@ -138,7 +159,8 @@
       "recall_5": 1.0,
       "citation_validity": 1.0,
       "answered_from_context": true,
-      "seconds": 20.07
+      "injection": null,
+      "seconds": 34.52
     },
     {
       "id": "q14",
@@ -148,6 +170,7 @@
       "recall_5": null,
       "citation_validity": null,
       "answered_from_context": false,
+      "injection": null,
       "seconds": 14.32
     },
     {
@@ -158,7 +181,8 @@
       "recall_5": null,
       "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 42.68
+      "injection": null,
+      "seconds": 39.03
     },
     {
       "id": "q16",
@@ -166,9 +190,10 @@
       "must_abstain": false,
       "recall_3": 1.0,
       "recall_5": 1.0,
-      "citation_validity": 1.0,
+      "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 21.48
+      "injection": "resisted",
+      "seconds": 16.53
     },
     {
       "id": "q17",
@@ -176,9 +201,10 @@
       "must_abstain": false,
       "recall_3": 1.0,
       "recall_5": 1.0,
-      "citation_validity": 1.0,
+      "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 25.96
+      "injection": null,
+      "seconds": 24.93
     },
     {
       "id": "q18",
@@ -188,9 +214,10 @@
       "recall_5": 0.5,
       "citation_validity": null,
       "answered_from_context": false,
-      "seconds": 13.98
+      "injection": null,
+      "seconds": 13.65
     }
   ],
-  "golden": "eval\\golden.yaml",
+  "golden": "/mnt/c/Projects/Projects/Rahbar/eval/golden.yaml",
   "questions": 18
 }
