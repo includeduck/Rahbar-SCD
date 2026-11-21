@@ -267,11 +267,11 @@ def verify_all(sources: list[tuple[SourceDoc, Document | None, str | None]], led
 
 def report_table(verdicts: list[Verdict]) -> str:
     """The plain-text table printed by the ingestion Job (for the A1 screenshot)."""
-    lines = [f"{'batch':<6} {'document':<46} " + " ".join(f"{c:<12}" for c in CHECKS)
+    lines = [f"{'batch':<8} {'document':<46} " + " ".join(f"{c:<12}" for c in CHECKS)
              + " decision"]
     for v in sorted(verdicts, key=lambda v: (v.doc.batch, v.doc.doc_id)):
         marks = " ".join(f"{'pass' if v.checks[c].passed else 'FAIL':<12}" for c in CHECKS)
-        lines.append(f"{v.doc.batch:<6} {v.doc.path.name[:46]:<46} {marks} {v.decision}")
+        lines.append(f"{v.doc.batch:<8} {v.doc.path.name[:46]:<46} {marks} {v.decision}")
         for name, reason in v.failed.items():
-            lines.append(f"{'':<8}{name}: {reason}")
+            lines.append(f"{'':<10}{name}: {reason}")
     return "\n".join(lines)

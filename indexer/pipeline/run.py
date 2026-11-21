@@ -159,8 +159,13 @@ def main() -> int:
                         help="Assignment 02 behaviour: rebuild everything into a new collection")
     args = parser.parse_args()
     settings = get_settings()
-    log("indexer starting", dummy=args.dummy, embed_model=settings.embed_model,
-        collection=settings.collection, chroma=f"{settings.chroma_host}:{settings.chroma_port}",
+    from .incremental import collection_name
+
+    mode = "dummy" if args.dummy else "full" if args.full else "incremental"
+    target = {"dummy": settings.collection, "full": "a new rahbar-g<timestamp> collection",
+              "incremental": collection_name(settings)}[mode]
+    log("indexer starting", mode=mode, embed_model=settings.embed_model,
+        collection=target, chroma=f"{settings.chroma_host}:{settings.chroma_port}",
         pod=os.environ.get("HOSTNAME", "-"))
     started = time.perf_counter()
     try:
