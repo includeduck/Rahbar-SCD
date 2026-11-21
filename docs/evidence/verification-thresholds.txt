@@ -1,0 +1,193 @@
+Verification thresholds, measured 21 Nov 2026 (eval/verify_thresholds.py)
+
+The 9 fetched documents (batch A) and Batch B (corpus/batch_b.py), through our own extract and
+clean stages in the indexer image (OCR on), fingerprints from nomic-embed-text on host Ollama.
+
+Quality: characters and share of letters per document
+batch    family                 file                                                     chars  letters
+A        academic-rules         undergraduate-academic-rules-aug-2023.pdf               25,722    93.3%  
+A        academic-rules         academic-rules-handbook-jun-2026.pdf                    78,679    94.5%  
+A        prospectus-2026-academ prospectus-2026-academic-rules-and-regulations.pdf      27,021    94.9%  
+A        student-handbook-jun-2 student-handbook-jun-2026.pdf                          120,155    94.6%  
+A        annual-report          annual-report-2019-20.pdf                               45,414    90.8%  
+A        annual-report          annual-report-2023-24.pdf                              180,467    91.4%  
+A        fee-structure-page     fee-structure-page.html                                  3,067    88.5%  
+A        grading-page           grading-page.html                                        3,913    89.7%  
+A        faculty-entrepreneursh faculty-entrepreneurship-and-technical-start-ups-pol     9,854    94.7%  
+batch-b  grading-page-copy      grading-copy.html                                        3,913    89.7%  
+batch-b  fee-structure-page-cop fee-structure-copy.html                                  3,067    88.5%  
+batch-b  grading-page-mirror    grading-near-duplicate.html                              3,949    89.8%  
+batch-b  academic-rules-handboo academic-rules-truncated.pdf                                 0     0.0%  PdfminerException: Unexpected EOF
+batch-b  scanned-notice-ocr-out garbled-scan.txt                                         1,543     2.4%  
+batch-b  examination-hall-rules exam-hall-rules.md                                         747    92.0%  
+batch-b  course-withdrawal-faq  course-withdrawal-faq.md                                   686    94.9%  
+batch-b  library-services-guide library-services-guide.md                                  622    91.3%  
+batch-b  fee-structure-page     fee-structure-2027-28.md                                   498    80.5%  
+batch-b  untitled-notice        untitled-notice.md                                         354    96.6%  
+
+Uniqueness: fingerprint cosine for every pair, highest first (same-family pairs are versions, not duplicates, and are not compared)
+  1.0000  different    fee-structure-page.html                      fee-structure-copy.html
+  1.0000  different    grading-page.html                            grading-near-duplicate.html
+  1.0000  different    grading-page.html                            grading-copy.html
+  1.0000  different    grading-copy.html                            grading-near-duplicate.html
+  0.9497  same family  annual-report-2019-20.pdf                    annual-report-2023-24.pdf
+  0.9073  same family  fee-structure-page.html                      fee-structure-2027-28.md
+  0.9073  different    fee-structure-copy.html                      fee-structure-2027-28.md
+  0.8966  same family  undergraduate-academic-rules-aug-2023.pdf    academic-rules-handbook-jun-2026.pdf
+  0.8847  different    academic-rules-handbook-jun-2026.pdf         student-handbook-jun-2026.pdf
+  0.8290  different    exam-hall-rules.md                           untitled-notice.md
+  0.8168  different    prospectus-2026-academic-rules-and-regulatio grading-page.html
+  0.8168  different    prospectus-2026-academic-rules-and-regulatio grading-near-duplicate.html
+  0.8168  different    prospectus-2026-academic-rules-and-regulatio grading-copy.html
+  0.8121  different    undergraduate-academic-rules-aug-2023.pdf    prospectus-2026-academic-rules-and-regulatio
+  0.7998  different    student-handbook-jun-2026.pdf                annual-report-2019-20.pdf
+  0.7820  different    academic-rules-handbook-jun-2026.pdf         annual-report-2019-20.pdf
+  0.7788  different    academic-rules-handbook-jun-2026.pdf         prospectus-2026-academic-rules-and-regulatio
+  0.7743  different    student-handbook-jun-2026.pdf                annual-report-2023-24.pdf
+  0.7684  different    undergraduate-academic-rules-aug-2023.pdf    student-handbook-jun-2026.pdf
+  0.7633  different    exam-hall-rules.md                           library-services-guide.md
+  0.7605  different    academic-rules-handbook-jun-2026.pdf         faculty-entrepreneurship-and-technical-start
+  0.7548  different    academic-rules-handbook-jun-2026.pdf         annual-report-2023-24.pdf
+  0.7448  different    undergraduate-academic-rules-aug-2023.pdf    grading-page.html
+  0.7448  different    undergraduate-academic-rules-aug-2023.pdf    grading-near-duplicate.html
+  0.7448  different    undergraduate-academic-rules-aug-2023.pdf    grading-copy.html
+  0.7381  different    student-handbook-jun-2026.pdf                faculty-entrepreneurship-and-technical-start
+  0.7250  different    library-services-guide.md                    untitled-notice.md
+  0.7199  different    library-services-guide.md                    fee-structure-2027-28.md
+  0.7196  different    academic-rules-handbook-jun-2026.pdf         grading-page.html
+  0.7196  different    academic-rules-handbook-jun-2026.pdf         grading-near-duplicate.html
+  0.7196  different    academic-rules-handbook-jun-2026.pdf         grading-copy.html
+  0.7140  different    undergraduate-academic-rules-aug-2023.pdf    annual-report-2019-20.pdf
+  0.7138  different    undergraduate-academic-rules-aug-2023.pdf    faculty-entrepreneurship-and-technical-start
+  0.7089  different    course-withdrawal-faq.md                     untitled-notice.md
+  0.6988  different    fee-structure-2027-28.md                     untitled-notice.md
+  0.6955  different    exam-hall-rules.md                           course-withdrawal-faq.md
+  0.6901  different    undergraduate-academic-rules-aug-2023.pdf    annual-report-2023-24.pdf
+  0.6882  different    prospectus-2026-academic-rules-and-regulatio exam-hall-rules.md
+  0.6865  different    exam-hall-rules.md                           fee-structure-2027-28.md
+  0.6859  different    undergraduate-academic-rules-aug-2023.pdf    exam-hall-rules.md
+  0.6850  different    prospectus-2026-academic-rules-and-regulatio student-handbook-jun-2026.pdf
+  0.6813  different    academic-rules-handbook-jun-2026.pdf         exam-hall-rules.md
+  0.6804  different    undergraduate-academic-rules-aug-2023.pdf    course-withdrawal-faq.md
+  0.6787  different    course-withdrawal-faq.md                     library-services-guide.md
+  0.6764  different    academic-rules-handbook-jun-2026.pdf         fee-structure-2027-28.md
+  0.6748  different    prospectus-2026-academic-rules-and-regulatio fee-structure-2027-28.md
+  0.6741  different    undergraduate-academic-rules-aug-2023.pdf    fee-structure-2027-28.md
+  0.6732  different    undergraduate-academic-rules-aug-2023.pdf    fee-structure-page.html
+  0.6732  different    undergraduate-academic-rules-aug-2023.pdf    fee-structure-copy.html
+  0.6694  different    academic-rules-handbook-jun-2026.pdf         library-services-guide.md
+  0.6692  different    academic-rules-handbook-jun-2026.pdf         fee-structure-page.html
+  0.6692  different    academic-rules-handbook-jun-2026.pdf         fee-structure-copy.html
+  0.6661  different    undergraduate-academic-rules-aug-2023.pdf    library-services-guide.md
+  0.6606  different    grading-page.html                            fee-structure-2027-28.md
+  0.6606  different    grading-near-duplicate.html                  fee-structure-2027-28.md
+  0.6606  different    grading-copy.html                            fee-structure-2027-28.md
+  0.6592  different    fee-structure-page.html                      library-services-guide.md
+  0.6592  different    fee-structure-copy.html                      library-services-guide.md
+  0.6592  different    prospectus-2026-academic-rules-and-regulatio faculty-entrepreneurship-and-technical-start
+  0.6566  different    course-withdrawal-faq.md                     fee-structure-2027-28.md
+  0.6555  different    grading-page.html                            fee-structure-copy.html
+  0.6555  different    grading-copy.html                            fee-structure-copy.html
+  0.6555  different    fee-structure-page.html                      grading-page.html
+  0.6555  different    fee-structure-page.html                      grading-near-duplicate.html
+  0.6555  different    fee-structure-page.html                      grading-copy.html
+  0.6555  different    fee-structure-copy.html                      grading-near-duplicate.html
+  0.6551  different    academic-rules-handbook-jun-2026.pdf         untitled-notice.md
+  0.6546  different    grading-page.html                            exam-hall-rules.md
+  0.6546  different    grading-near-duplicate.html                  exam-hall-rules.md
+  0.6546  different    grading-copy.html                            exam-hall-rules.md
+  0.6522  different    academic-rules-handbook-jun-2026.pdf         course-withdrawal-faq.md
+  0.6503  different    grading-page.html                            course-withdrawal-faq.md
+  0.6503  different    grading-near-duplicate.html                  course-withdrawal-faq.md
+  0.6503  different    grading-copy.html                            course-withdrawal-faq.md
+  0.6487  different    undergraduate-academic-rules-aug-2023.pdf    untitled-notice.md
+  0.6486  different    prospectus-2026-academic-rules-and-regulatio untitled-notice.md
+  0.6472  different    prospectus-2026-academic-rules-and-regulatio course-withdrawal-faq.md
+  0.6436  different    prospectus-2026-academic-rules-and-regulatio fee-structure-page.html
+  0.6436  different    prospectus-2026-academic-rules-and-regulatio fee-structure-copy.html
+  0.6428  different    student-handbook-jun-2026.pdf                untitled-notice.md
+  0.6402  different    student-handbook-jun-2026.pdf                library-services-guide.md
+  0.6371  different    annual-report-2019-20.pdf                    faculty-entrepreneurship-and-technical-start
+  0.6337  different    student-handbook-jun-2026.pdf                fee-structure-2027-28.md
+  0.6309  different    prospectus-2026-academic-rules-and-regulatio library-services-guide.md
+  0.6303  different    student-handbook-jun-2026.pdf                grading-page.html
+  0.6303  different    student-handbook-jun-2026.pdf                grading-near-duplicate.html
+  0.6303  different    student-handbook-jun-2026.pdf                grading-copy.html
+  0.6163  different    student-handbook-jun-2026.pdf                fee-structure-page.html
+  0.6163  different    student-handbook-jun-2026.pdf                fee-structure-copy.html
+  0.6160  different    fee-structure-page.html                      untitled-notice.md
+  0.6160  different    fee-structure-copy.html                      untitled-notice.md
+  0.6157  different    faculty-entrepreneurship-and-technical-start fee-structure-2027-28.md
+  0.6153  different    fee-structure-page.html                      faculty-entrepreneurship-and-technical-start
+  0.6153  different    faculty-entrepreneurship-and-technical-start fee-structure-copy.html
+  0.6125  different    grading-page.html                            library-services-guide.md
+  0.6125  different    grading-near-duplicate.html                  library-services-guide.md
+  0.6125  different    grading-copy.html                            library-services-guide.md
+  0.6120  different    student-handbook-jun-2026.pdf                exam-hall-rules.md
+  0.6114  different    fee-structure-page.html                      exam-hall-rules.md
+  0.6114  different    fee-structure-copy.html                      exam-hall-rules.md
+  0.6114  different    annual-report-2023-24.pdf                    faculty-entrepreneurship-and-technical-start
+  0.6095  different    faculty-entrepreneurship-and-technical-start library-services-guide.md
+  0.6080  different    grading-page.html                            untitled-notice.md
+  0.6080  different    grading-near-duplicate.html                  untitled-notice.md
+  0.6080  different    grading-copy.html                            untitled-notice.md
+  0.6075  different    prospectus-2026-academic-rules-and-regulatio annual-report-2019-20.pdf
+  0.5995  different    fee-structure-page.html                      course-withdrawal-faq.md
+  0.5995  different    fee-structure-copy.html                      course-withdrawal-faq.md
+  0.5990  different    annual-report-2019-20.pdf                    grading-page.html
+  0.5990  different    annual-report-2019-20.pdf                    grading-near-duplicate.html
+  0.5990  different    annual-report-2019-20.pdf                    grading-copy.html
+  0.5929  different    grading-page.html                            faculty-entrepreneurship-and-technical-start
+  0.5929  different    faculty-entrepreneurship-and-technical-start grading-near-duplicate.html
+  0.5929  different    faculty-entrepreneurship-and-technical-start grading-copy.html
+  0.5907  different    annual-report-2019-20.pdf                    fee-structure-2027-28.md
+  0.5872  different    annual-report-2019-20.pdf                    fee-structure-page.html
+  0.5872  different    annual-report-2019-20.pdf                    fee-structure-copy.html
+  0.5837  different    student-handbook-jun-2026.pdf                course-withdrawal-faq.md
+  0.5785  different    annual-report-2023-24.pdf                    grading-page.html
+  0.5785  different    annual-report-2023-24.pdf                    grading-near-duplicate.html
+  0.5785  different    annual-report-2023-24.pdf                    grading-copy.html
+  0.5774  different    annual-report-2019-20.pdf                    library-services-guide.md
+  0.5749  different    prospectus-2026-academic-rules-and-regulatio annual-report-2023-24.pdf
+  0.5734  different    annual-report-2023-24.pdf                    fee-structure-2027-28.md
+  0.5729  different    faculty-entrepreneurship-and-technical-start exam-hall-rules.md
+  0.5686  different    garbled-scan.txt                             exam-hall-rules.md
+  0.5653  different    annual-report-2023-24.pdf                    fee-structure-page.html
+  0.5653  different    annual-report-2023-24.pdf                    fee-structure-copy.html
+  0.5632  different    faculty-entrepreneurship-and-technical-start untitled-notice.md
+  0.5632  different    garbled-scan.txt                             untitled-notice.md
+  0.5610  different    faculty-entrepreneurship-and-technical-start course-withdrawal-faq.md
+  0.5403  different    annual-report-2019-20.pdf                    untitled-notice.md
+  0.5361  different    annual-report-2023-24.pdf                    library-services-guide.md
+  0.5199  different    annual-report-2019-20.pdf                    course-withdrawal-faq.md
+  0.5148  different    garbled-scan.txt                             course-withdrawal-faq.md
+  0.5112  different    annual-report-2019-20.pdf                    exam-hall-rules.md
+  0.5075  different    annual-report-2023-24.pdf                    untitled-notice.md
+  0.4925  different    annual-report-2023-24.pdf                    course-withdrawal-faq.md
+  0.4925  different    garbled-scan.txt                             library-services-guide.md
+  0.4847  different    annual-report-2023-24.pdf                    exam-hall-rules.md
+  0.4774  different    grading-page.html                            garbled-scan.txt
+  0.4774  different    grading-near-duplicate.html                  garbled-scan.txt
+  0.4774  different    grading-copy.html                            garbled-scan.txt
+  0.4759  different    academic-rules-handbook-jun-2026.pdf         garbled-scan.txt
+  0.4721  different    student-handbook-jun-2026.pdf                garbled-scan.txt
+  0.4643  different    garbled-scan.txt                             fee-structure-2027-28.md
+  0.4573  different    annual-report-2023-24.pdf                    garbled-scan.txt
+  0.4461  different    undergraduate-academic-rules-aug-2023.pdf    garbled-scan.txt
+  0.4431  different    prospectus-2026-academic-rules-and-regulatio garbled-scan.txt
+  0.4285  different    annual-report-2019-20.pdf                    garbled-scan.txt
+  0.3941  different    faculty-entrepreneurship-and-technical-start garbled-scan.txt
+  0.3663  different    fee-structure-page.html                      garbled-scan.txt
+  0.3663  different    fee-structure-copy.html                      garbled-scan.txt
+
+Decisions (indexer/pipeline/verify.py):
+- MIN_LETTER_RATIO 0.55. Real documents are 80.5% to 96.6% letters (the lowest is the 2027-28
+  fee revision, mostly a table of numbers); the garbled scan is 2.4%. 0.55 sits in the gap.
+- NEAR_DUP_THRESHOLD 0.97. Copies and the one-sentence near-duplicate score 1.0000. The most
+  similar genuinely different documents (Academic Rules Handbook and Student Handbook) score
+  0.8847; versions within a family score 0.897 to 0.950 but are left to the recency check and
+  never compared for uniqueness. 0.97 is above every pair that should stay and below the copies.
+- Caveat: Batch B's near-duplicate adds one sentence, so it is an easy case (1.0000). A heavier
+  edit of the same page would score lower and could pass under 0.97.
+- The truncated PDF fails extraction ("Unexpected EOF"), so the quality check catches it first;
+  the completeness check would also flag it (no %%EOF marker).
