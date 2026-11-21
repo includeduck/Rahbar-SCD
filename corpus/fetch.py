@@ -98,6 +98,12 @@ def load_sources() -> list[dict]:
     return docs
 
 
+def _optional(doc: dict) -> dict:
+    """Fields the indexer's verification stage reads when they are set (pipeline/verify.py):
+    family groups versions of one document, so the recency check can archive older ones."""
+    return {k: doc[k] for k in ("family", "title", "date") if doc.get(k)}
+
+
 def fetch(force: bool) -> int:
     docs = load_sources()
     RAW.mkdir(parents=True, exist_ok=True)
@@ -113,7 +119,8 @@ def fetch(force: bool) -> int:
             if old and not force and (RAW / old["file"]).exists() and old["url"] == url:
                 print(f"  have    {old['file']}")
                 entries.append({**old, "doc_version": doc.get("doc_version", "unknown"),
-                                "superseded": bool(doc.get("superseded", False))})
+                                "superseded": bool(doc.get("superseded", False)),
+                                **_optional(doc)})
                 continue
             print(f"  fetch   {name}")
             try:
@@ -133,6 +140,7 @@ def fetch(force: bool) -> int:
                     "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                     "doc_version": doc.get("doc_version", "unknown"),
                     "superseded": bool(doc.get("superseded", False)),
+                    **_optional(doc),
                 })
                 print(f"          {file}, {len(response.content):,} bytes")
             except Exception as exc:  # report every failure, keep going
