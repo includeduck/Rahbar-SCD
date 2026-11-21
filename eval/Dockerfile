@@ -17,7 +17,8 @@ RUN apt-get update \
 ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    EVAL_RESULTS_DIR=/results \n    GIT_SHA=$GIT_SHA
+    EVAL_RESULTS_DIR=/results \
+    GIT_SHA=$GIT_SHA
 RUN groupadd --system --gid 10001 rahbar \
  && useradd --system --uid 10001 --gid rahbar --no-create-home --shell /usr/sbin/nologin rahbar
 COPY --from=build /opt/venv /opt/venv
