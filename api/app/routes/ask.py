@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -21,11 +22,14 @@ def ask(body: AskRequest, request: Request) -> JSONResponse:
 
     # Embed the question once — reused by both cache lookup and retrieval
     query_vec: list[float] | None = None
+    embed_ms: float | None = None
     if cache is not None:
         try:
             retriever = state.retriever
             if hasattr(retriever, "_embed_query"):
+                t0 = time.perf_counter()
                 query_vec = retriever._embed_query(body.question)
+                embed_ms = (time.perf_counter() - t0) * 1000
         except Exception as exc:
             # Skip the cache; retrieval embeds again. Logged because on 8 Nov a request took
             # 90.8 s during a re-index and this failure could only be inferred from timings.
@@ -35,7 +39,7 @@ def ask(body: AskRequest, request: Request) -> JSONResponse:
 
     response, was_cache_hit = answer_question(
         body.question, state.retriever, state.provider, state.settings,
-        cache=cache, query_vec=query_vec,
+        cache=cache, query_vec=query_vec, embed_ms=embed_ms,
     )
 
     return JSONResponse(

@@ -19,3 +19,7 @@ resources:
   - reindex-cronjob.yaml
   - hpa.yaml
   - networkpolicy.yaml
+  - traces.yaml                 # Assignment 03: the query traces volume
+
+patches:
+  - path: api-traces-patch.yaml

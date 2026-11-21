@@ -52,3 +52,6 @@ data:
   CORPUS_DIR: "/corpus"
 
   LOG_LEVEL: "INFO"
+  # Assignment 03, D1: the api appends one trace per query here (the traces volume) as
+  # well as printing it to stdout. Empty means stdout only.
+  TRACE_DIR: "/traces"

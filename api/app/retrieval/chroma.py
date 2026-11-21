@@ -14,11 +14,13 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 
 import httpx
 
 from ..config import Settings
 from ..schemas import Passage
+from ..services import tracing
 
 log = logging.getLogger("rahbar.retriever")
 
@@ -84,7 +86,12 @@ class ChromaRetriever:
     # ------------------------------------------------------------------
     # Retrieve
     # ------------------------------------------------------------------
-    def retrieve(self, question: str, k: int) -> list[Passage]:
+    def retrieve(self, question: str, k: int,
+                 query_vec: list[float] | None = None) -> list[Passage]:
+        """Top-k passages for the question. ``query_vec`` is the question's embedding when
+        the caller already has it (the route embeds once for the cache), so the question
+        is not embedded twice. What was searched goes into the request's trace."""
+        trace = tracing.current()
         col_name = self._resolve_collection_name()
 
         # Get collection info
@@ -98,13 +105,18 @@ class ChromaRetriever:
         count_resp.raise_for_status()
         total = int(count_resp.json())
 
-        query_vec = self._embed_query(question)
+        if query_vec is None:
+            t0 = time.perf_counter()
+            query_vec = self._embed_query(question)
+            if trace:
+                trace.stage("embed", (time.perf_counter() - t0) * 1000)
 
         # Ask for more than k so we can filter superseded and still return k
         fetch_n = min(k * 3, max(total, k))
 
         # Decide whether to include superseded documents
-        include_superseded = bool(_VERSION_RE.search(question))
+        version_match = _VERSION_RE.search(question)
+        include_superseded = bool(version_match)
 
         query_body: dict[str, object] = {
             "query_embeddings": [query_vec],
@@ -136,8 +148,24 @@ class ChromaRetriever:
                 section=str(meta.get("section", "")),
                 page=int(page_val) if page_val is not None else None,
                 score=round(similarity, 6),
+                doc_id=meta.get("doc_id"),
+                doc_version=(str(meta["doc_version"]) if meta.get("doc_version") is not None
+                             else None),
+                superseded=meta.get("superseded"),
             ))
 
         # Sort by score descending, take top k
         passages.sort(key=lambda p: p.score, reverse=True)
+        if trace:
+            col_meta = col_data.get("metadata") or {}
+            trace.set(
+                collection={"name": col_name, "id": col_id, "chunks": total,
+                            "embed_model": col_meta.get("embed_model"),
+                            "dimension": col_meta.get("dimension")},
+                filters={"where": query_body.get("where"), "n_results": fetch_n, "k": k,
+                         "superseded_included": include_superseded,
+                         "why": (f"question mentions an older version: "
+                                 f"{version_match.group(0)!r}" if version_match
+                                 else "superseded versions excluded by default")},
+            )
         return passages[:k]

@@ -1,0 +1,7 @@
+collection rahbar-nomic-embed-text-c400o50: 703 chunks scanned (158 of them superseded)
+  FLAGGED 89882b0fde234489  library-services-guide @ 2026-11  section 'Notice to automated assistants'
+      ignore_instructions  'IGNORE ALL PREVIOUS INSTRUCTIONS'
+      role_override        'You are no longer'
+      addressed_to_ai      'Notice to automated'
+      conceal              'do not mention this'
+1 chunk(s) flagged in 1 document(s): library-services-guide 1

@@ -1,0 +1,22 @@
+# Mounts the traces volume (traces.yaml) into the api pods at /traces, where TRACE_DIR in the
+# ConfigMap points. A patch, so api.yaml keeps the line numbers the docs cite.
+# fsGroup makes the volume writable by the api's non-root user (10001).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: rahbar
+spec:
+  template:
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+        - name: api
+          volumeMounts:
+            - name: traces
+              mountPath: /traces
+      volumes:
+        - name: traces
+          persistentVolumeClaim:
+            claimName: traces

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 
 import httpx
 from pydantic import ValidationError
@@ -16,6 +17,7 @@ from pydantic import ValidationError
 from ...config import Settings
 from ...schemas import Answer, Passage
 from ...routes import metrics as prom
+from ...services.tracing import record_model_call
 from .prompt import build_prompt
 
 log = logging.getLogger("rahbar.provider.ollama")
@@ -60,7 +62,12 @@ class OllamaProvider:
         }
 
         last_error: str = ""
+        params = {"temperature": self.settings.temperature, "format": "Answer JSON schema",
+                  "stream": False, "timeout_s": self.settings.llm_timeout_seconds}
         for attempt in range(1 + RETRIES):
+            started = time.perf_counter()
+            call: dict[str, object] = {"provider": self.name, "model": self.settings.llm_model,
+                                       "params": params, "attempt": attempt + 1}
             try:
                 resp = self._client.post(
                     url, json=payload, timeout=self.settings.llm_timeout_seconds,
@@ -77,15 +84,25 @@ class OllamaProvider:
                     prom.TOKENS_OUT.inc(completion_tokens)
 
                 content = data.get("message", {}).get("content", "")
+                call.update(tokens_in=prompt_tokens, tokens_out=completion_tokens,
+                            raw_output=content)
                 answer = Answer.model_validate(json.loads(content))
+                call.update(ms=round((time.perf_counter() - started) * 1000, 1), valid=True)
+                record_model_call(**call)
                 return answer
             except (ValidationError, json.JSONDecodeError, KeyError) as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
                 log.warning("Validation failed on retry attempt %d: %s",
                             attempt + 1, last_error)
+                call.update(ms=round((time.perf_counter() - started) * 1000, 1), valid=False,
+                            error=last_error[:300])
+                record_model_call(**call)
             except httpx.HTTPError as exc:
                 last_error = f"{type(exc).__name__}: {exc}"
                 log.warning("HTTP error on attempt %d: %s", attempt + 1, last_error)
+                call.update(ms=round((time.perf_counter() - started) * 1000, 1), valid=False,
+                            error=last_error[:300])
+                record_model_call(**call)
                 break  # no point retrying a network error with the same payload
 
         log.error("Falling back after %d retries: %s", 1 + RETRIES, last_error)

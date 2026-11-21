@@ -14,6 +14,12 @@ Production steps (section 3.2–3.4):
    every abstention shows ABSTAIN_MESSAGE, not the model's text
 8. Store in cache (skip abstentions, fallbacks, follow-ups)
 9. Log one structured line per request with chunk ids and scores
+
+Assignment 03 adds:
+- one trace record per request (services/tracing.py, D1), written on every return path
+- an input rail and a retrieval rail against prompt injection (services/guardrails.py, D4):
+  the input rail flags, the retrieval rail drops poisoned passages before the prompt
+- metrics for the outcome, top-1 similarity, stage latency and injections (D3)
 """
 
 from __future__ import annotations
@@ -21,13 +27,17 @@ from __future__ import annotations
 import logging
 import re
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from ..config import Settings
 from ..logjson import request_id_var
 from ..providers.llm.base import LLMProvider
+from ..providers.llm.prompt import build_prompt
 from ..retrieval.base import Retriever
 from ..routes import metrics as prom
 from ..schemas import Answer, AskResponse, Citation, Passage, RetrievedRef
+from . import guardrails, tracing
 from .cache import SemanticCache
 from .safety import SUPPORT_MESSAGE, mentions_self_harm
 
@@ -74,6 +84,13 @@ def _section_matches(cited: str, retrieved: str) -> bool:
     return bool(re.match(re.escape(cited) + r"(?![\d.])", retrieved, re.I))
 
 
+def _note(action: str, **detail: object) -> None:
+    """Record what the output rail did in the request's trace."""
+    trace = tracing.current()
+    if trace:
+        trace.guardrail("output", action, **detail)
+
+
 def _filter_citations(
     citations: list[Citation], passages: list["RetrievedRef"],
 ) -> list[Citation]:
@@ -86,6 +103,8 @@ def _filter_citations(
                       if p.source == c.source and _section_matches(c.section, p.section)), None)
         if match is None:
             log.warning("Dropped citation not in retrieved set: %s / %s", c.source, c.section)
+            _note("dropped_citation", source=c.source, section=c.section,
+                  why="names no passage in the prompt")
             continue
         cited = Citation(source=match.source, section=match.section, page=match.page)
         if cited not in kept:
@@ -109,7 +128,10 @@ def _generate_and_validate(
         except Exception as exc:
             log.error("Provider error on attempt %d: %s", attempt + 1, exc)
             prom.FALLBACKS.inc()
+            _note("fallback", why=f"provider error: {type(exc).__name__}: {exc}"[:300])
             return _safe_fallback()
+        if answer.reasoning.startswith("fallback:"):
+            _note("fallback", why=answer.reasoning)
 
         # Filter citations: drop any that don't match a retrieved passage
         answer.citations = _filter_citations(answer.citations, retrieved_refs)
@@ -123,6 +145,8 @@ def _generate_and_validate(
                 attempt + 1,
                 "retrying" if attempt < GENERATE_RETRIES else "falling back",
             )
+            _note("ungrounded_answer", attempt=attempt + 1,
+                  then="retry" if attempt < GENERATE_RETRIES else "fallback")
             if attempt < GENERATE_RETRIES:
                 continue
             # Final attempt: force to abstention, never cache. The model's text is
@@ -151,6 +175,9 @@ def _generate_and_validate(
             if answer.citations:
                 log.warning("Abstaining although the model cited %d valid passage(s) "
                             "with confidence %s", len(answer.citations), answer.confidence)
+            if not answer.reasoning.startswith("fallback:"):
+                _note("model_abstained", model_answer=answer.answer[:300],
+                      cited=len(answer.citations), confidence=answer.confidence)
             answer.answer = ABSTAIN_MESSAGE
             answer.citations = []
 
@@ -161,6 +188,28 @@ def _generate_and_validate(
     return _safe_fallback()
 
 
+def _outcome(answer: Answer) -> str:
+    if answer.answered_from_context:
+        return "answered"
+    if answer.reasoning.startswith("fallback:"):
+        return "fallback"
+    return "abstain_model"
+
+
+def _observe(trace: tracing.Trace, stage: str, ms: float) -> None:
+    trace.stage(stage, ms)
+    prom.STAGE_LATENCY.labels(stage=stage).observe(ms / 1000)
+
+
+@contextmanager
+def _timed(trace: tracing.Trace, stage: str) -> Iterator[None]:
+    t0 = time.perf_counter()
+    try:
+        yield
+    finally:
+        _observe(trace, stage, (time.perf_counter() - t0) * 1000)
+
+
 def answer_question(
     question: str,
     retriever: Retriever,
@@ -168,15 +217,48 @@ def answer_question(
     settings: Settings,
     cache: SemanticCache | None = None,
     query_vec: list[float] | None = None,
+    embed_ms: float | None = None,
 ) -> tuple[AskResponse, bool]:
-    """Return ``(response, was_cache_hit)``."""
+    """Return ``(response, was_cache_hit)``. Writes one trace record whatever happens."""
+    trace = tracing.Trace(request_id_var.get(), question, settings)
+    token = tracing.trace_var.set(trace)
+    outcome = "error"
+    try:
+        if embed_ms is not None:
+            _observe(trace, "embed", embed_ms)
+        response, hit, outcome = _answer(question, retriever, provider, settings, cache,
+                                         query_vec, trace)
+        trace.set(response={"answer": response.answer,
+                            "answered_from_context": response.answered_from_context,
+                            "confidence": response.confidence},
+                  citations=[c.model_dump() for c in response.citations])
+        return response, hit
+    finally:
+        rec = trace.emit(outcome)
+        prom.RESPONSES.labels(outcome=outcome).inc()
+        prom.STAGE_LATENCY.labels(stage="total").observe(rec["latency_ms"]["total"] / 1000)
+        tracing.trace_var.reset(token)
+
+
+def _answer(
+    question: str,
+    retriever: Retriever,
+    provider: LLMProvider,
+    settings: Settings,
+    cache: SemanticCache | None,
+    query_vec: list[float] | None,
+    trace: tracing.Trace,
+) -> tuple[AskResponse, bool, str]:
+    """The pipeline itself. Returns ``(response, was_cache_hit, outcome)``."""
     retrieval_ms = 0.0
     generation_ms = 0.0
 
     # 0. Self-harm check: a fixed support message, before the cache, retrieval and the
-    #    LLM. The question text is not logged.
+    #    LLM. The question text is not logged, and not kept in the trace.
     if mentions_self_harm(question):
         prom.SUPPORT_REPLIES.inc()
+        trace.redact_query()
+        trace.guardrail("input", "support_reply", why="self-harm phrase")
         log.info("support_reply", extra={
             "reason": "self_harm_phrase", "top_k": settings.top_k, "chunk_ids": [],
             "scores": [], "answered_from_context": False,
@@ -189,11 +271,20 @@ def answer_question(
             confidence="low",
             retrieved=[],
             provider=provider.name,
-        ), False
+        ), False, "support"
+
+    # 0b. Input rail: flag an instruction-override attempt in the question. The question is
+    #     still answered from the documents; the flag makes the attempt visible and counted.
+    flags = guardrails.scan(question)
+    if flags:
+        prom.INJECTION_FLAGGED.labels(rail="input").inc()
+        trace.guardrail("input", "flagged", rules=[f.rule for f in flags],
+                        matches=[f.match for f in flags], then="answered from the documents")
 
     # 1. Semantic cache lookup
     if cache is not None and not cache.should_skip_cache(question):
-        cached = cache.get(question, query_vec)
+        with _timed(trace, "cache"):
+            cached = cache.get(question, query_vec)
         if cached is not None:
             prom.CACHE_HITS.inc()
             # The same fields as the "answered" line, from the cached response; the
@@ -206,17 +297,29 @@ def answer_question(
                 "answered_from_context": cached.answered_from_context,
                 "cache": "hit",
             })
+            # The prompt is in the trace of the request that filled the cache.
+            trace.set(cache="hit", cache_source_trace=cached.request_id,
+                      cache_generation=getattr(cache, "generation_id", None),
+                      retrieved=[{"rank": i, **r.model_dump()}
+                                 for i, r in enumerate(cached.retrieved, 1)])
             cached.request_id = request_id_var.get()
-            return cached, True
+            return cached, True, "cache_hit"
         prom.CACHE_MISSES.inc()
+        trace.set(cache="miss", cache_generation=getattr(cache, "generation_id", None))
 
-    # 2. Retrieve top-k passages
+    # 2. Retrieve top-k passages. The Chroma retriever reuses the route's query embedding.
+    embed_before = trace.record["latency_ms"].get("embed", 0.0)
     t0 = time.perf_counter()
     try:
-        passages = retriever.retrieve(question, k=settings.top_k)
+        if query_vec is not None and retriever.name == "chroma":
+            passages = retriever.retrieve(question, k=settings.top_k,  # type: ignore[call-arg]
+                                          query_vec=query_vec)
+        else:
+            passages = retriever.retrieve(question, k=settings.top_k)
     except Exception as exc:
         log.error("Retrieval error: %s", exc)
         prom.FALLBACKS.inc()
+        trace.set(error=f"retrieval: {type(exc).__name__}: {exc}"[:300])
         return AskResponse(
             request_id=request_id_var.get(),
             answer="The retrieval service is temporarily unavailable. Please try again.",
@@ -225,9 +328,14 @@ def answer_question(
             confidence="low",
             retrieved=[],
             provider=provider.name,
-        ), False
+        ), False, "retrieval_error"
     retrieval_ms = (time.perf_counter() - t0) * 1000
     prom.RETRIEVAL_LATENCY.observe(retrieval_ms / 1000)
+    # If the retriever embedded the question itself, that time is the embed stage.
+    embedded_inside = trace.record["latency_ms"].get("embed", 0.0) - embed_before
+    _observe(trace, "retrieve", retrieval_ms - embedded_inside)
+    if passages:
+        prom.TOP1_SIMILARITY.observe(passages[0].score)
 
     retrieved_refs = [
         RetrievedRef(
@@ -236,11 +344,30 @@ def answer_question(
         )
         for p in passages
     ]
+    trace.set(retrieved=[
+        {"rank": i, "chunk_id": p.chunk_id, "doc_id": p.doc_id, "doc_version": p.doc_version,
+         "superseded": p.superseded, "source": p.source, "section": p.section,
+         "page": p.page, "score": round(p.score, 4)}
+        for i, p in enumerate(passages, 1)
+    ], reranker="none: ordered by similarity")
 
-    # 3. Relevance floor: abstain if no passage is above the threshold
+    # 2b. Retrieval rail: a passage that carries instructions for the model never reaches
+    #     the prompt. It stays in `retrieved`, so the evaluation still sees it.
+    clean, poisoned = guardrails.split_poisoned(passages)
+    for p, pflags in poisoned:
+        prom.INJECTION_FLAGGED.labels(rail="retrieval").inc()
+        trace.guardrail("retrieval", "dropped_passage", chunk_id=p.chunk_id, doc_id=p.doc_id,
+                        source=p.source, section=p.section, score=round(p.score, 4),
+                        rules=[f.rule for f in pflags], matches=[f.match for f in pflags])
+        log.warning("Dropped a retrieved passage carrying instructions", extra={
+            "chunk_id": p.chunk_id, "source": p.source, "rules": [f.rule for f in pflags]})
+
+    # 3. Relevance floor: abstain if no usable passage is above the threshold
     relevance_floor = settings.relevance_floor
-    if not passages or all(p.score < relevance_floor for p in passages):
+    if not clean or all(p.score < relevance_floor for p in clean):
         prom.ABSTENTIONS.inc()
+        trace.guardrail("retrieval", "abstain_below_floor", floor=relevance_floor,
+                        best=round(max((p.score for p in clean), default=0.0), 4))
         log.info("abstaining", extra={
             "reason": "below_relevance_floor",
             "retriever": retriever.name,
@@ -259,18 +386,24 @@ def answer_question(
             confidence="low",
             retrieved=retrieved_refs,
             provider=provider.name,
-        ), False
+        ), False, "abstain_floor"
 
     # 4. Generate answer (with retry on ungrounded citations). Only the best
     #    max_context_passages go into the prompt: on a laptop CPU reading the prompt is
     #    the slow part. Citations are checked against exactly those passages, and the
-    #    response still lists all top_k retrieved passages (for recall@k).
-    context = passages[: max(1, settings.max_context_passages)]
-    context_refs = retrieved_refs[: len(context)]
+    #    response still lists all top_k retrieved passages (for recall@k). The prompt is
+    #    built here too (the providers build the same one) so the trace holds it exactly.
+    context = clean[: max(1, settings.max_context_passages)]
+    ref_of = {id(p): r for p, r in zip(passages, retrieved_refs)}
+    context_refs = [ref_of[id(p)] for p in context]
+    prompt = build_prompt(question, context)
+    trace.set(context=[p.chunk_id for p in context], prompt=prompt,
+              prompt_sha256=tracing.sha256(prompt))
     t0 = time.perf_counter()
     answer = _generate_and_validate(question, context, context_refs, provider)
     generation_ms = (time.perf_counter() - t0) * 1000
     prom.GENERATION_LATENCY.observe(generation_ms / 1000)
+    _observe(trace, "generate", generation_ms)
 
     response = AskResponse(
         request_id=request_id_var.get(),
@@ -302,4 +435,4 @@ def answer_question(
             "generation_ms": round(generation_ms, 1),
         },
     )
-    return response, False
+    return response, False, _outcome(answer)
