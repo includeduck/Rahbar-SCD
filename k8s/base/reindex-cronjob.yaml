@@ -113,9 +113,10 @@ spec:
                   cpu: "2"
                   memory: 2Gi
               volumeMounts:
+                # Writable since Assignment 03: verification moves failed documents to quarantine/,
+                # and the lake, archive, ledger and reports live on this volume too (pipeline/lake.py).
                 - name: corpus
                   mountPath: /corpus
-                  readOnly: true
                 - name: tmp
                   mountPath: /tmp
               securityContext:

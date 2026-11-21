@@ -104,11 +104,11 @@ def run_pipeline(settings: IndexerSettings) -> int:
     from .store import get_client
     from .verify import report_table, verify_all
 
-    root = Path(settings.corpus_dir)
+    root = Path(settings.lake_dir or settings.corpus_dir)
     rid = run_id()
-    sources = discover_sources(root)
+    sources = discover_sources(Path(settings.corpus_dir))
     if not sources:
-        raise SystemExit(f"no documents found in {root}")
+        raise SystemExit(f"no documents found in {settings.corpus_dir}")
     ledger = Ledger(root)
     extracted: list[tuple[SourceDoc, Document | None, str | None]] = []
     for doc in sources:

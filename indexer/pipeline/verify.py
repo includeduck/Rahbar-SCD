@@ -251,8 +251,9 @@ def verify_all(sources: list[tuple[SourceDoc, Document | None, str | None]], led
             note = " (pinned by restore)" if pinned else ""
             v.checks["recency"] = Check(True, f"current version {v.doc.doc_version}{note}")
         else:
-            v.checks["recency"] = Check(False, f"newer version {current_ver} ({current_id}) "
-                                               f"in family {v.doc.family}")
+            why = (f"version {current_ver} ({current_id}) is pinned as current by a restore"
+                   if pinned_match else f"newer version {current_ver} ({current_id})")
+            v.checks["recency"] = Check(False, f"{why} in family {v.doc.family}")
 
     for v in verdicts:
         if any(not v.checks[c].passed for c in ("quality", "completeness", "uniqueness")):

@@ -6,6 +6,8 @@
 !corpus/fetch.py
 !corpus/sources.yaml
 !corpus/MANIFEST.md
+!corpus/batch_b.py
+!corpus/batch-b/
 !eval/fixtures/
 **/__pycache__
 **/*.pyc

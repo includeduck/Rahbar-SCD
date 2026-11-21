@@ -17,6 +17,7 @@ class IndexerSettings:
     chunk_overlap: int
     ollama_url: str
     collection_override: str = ""   # COLLECTION_NAME: fixes the collection (Part F candidate)
+    lake_dir: str = ""              # LAKE_DIR: where lake/, archive/, quarantine/, state/ go
 
 
 def get_settings() -> IndexerSettings:
@@ -30,4 +31,5 @@ def get_settings() -> IndexerSettings:
         chunk_overlap=int(os.environ.get("CHUNK_OVERLAP", 50)),
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),
         collection_override=os.environ.get("COLLECTION_NAME", ""),
+        lake_dir=os.environ.get("LAKE_DIR") or os.environ.get("CORPUS_DIR") or "/corpus",
     )

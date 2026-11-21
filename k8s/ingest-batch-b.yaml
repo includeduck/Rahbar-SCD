@@ -1,0 +1,77 @@
+# Ingest Batch B (Assignment 03, Part A): build the batch on the corpus volume, then run the
+# same ingestion as the indexer Job (verify, then update the lake and the index incrementally).
+#
+#   kubectl -n rahbar delete job ingest-batch-b --ignore-not-found
+#   kubectl apply -f k8s/ingest-batch-b.yaml
+#   kubectl -n rahbar logs -f job/ingest-batch-b
+#
+# A plain manifest, applied without kustomize, so it names the local image tag (:dev) itself.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingest-batch-b
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: indexer
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      restartPolicy: Never
+      serviceAccountName: indexer
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Copies of fetched documents (duplicates, near-duplicate, truncated) plus the
+        # synthetic documents baked into the image, into /corpus/incoming/batch-b.
+        - name: build-batch-b
+          image: rahbar-indexer:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/corpus/batch_b.py", "--root", "/corpus"]
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          volumeMounts:
+            - {name: corpus, mountPath: /corpus}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      containers:
+        - name: indexer
+          image: rahbar-indexer:dev
+          imagePullPolicy: IfNotPresent
+          args: ["python", "-m", "pipeline.run"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          # The same sizing as the indexer Job (docs/evidence/kubectl-top-indexer.txt).
+          resources:
+            requests: {cpu: 500m, memory: 768Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          volumeMounts:
+            - {name: corpus, mountPath: /corpus}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: corpus
+          persistentVolumeClaim:
+            claimName: corpus-data
+        - name: tmp
+          emptyDir: {}

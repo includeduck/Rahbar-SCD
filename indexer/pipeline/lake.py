@@ -1,6 +1,8 @@
 """The data lake on the corpus volume (Assignment 03, Part A; RAGOps paper 4.2.1 to 4.2.4).
 
-Layout under CORPUS_DIR (the corpus PersistentVolumeClaim, mounted at /corpus in the Jobs):
+Inputs are read under CORPUS_DIR; everything the lake writes goes under LAKE_DIR, which is the
+same folder unless set (the CI fixtures are read-only, so CI points LAKE_DIR at /tmp). In the
+cluster both are the corpus PersistentVolumeClaim, mounted at /corpus in the Jobs:
 
     <root>/                      batch "A": what corpus/fetch.py downloads, listed in _index.json
     <root>/incoming/<batch>/     further batches (Batch B, or documents dropped in for a demo),
@@ -66,6 +68,24 @@ class SourceDoc:
     declared: dict[str, Any] = field(default_factory=dict)
 
 
+def front_matter(path: Path) -> dict[str, Any]:
+    """`key: value` lines between leading '---' markers (the CI fixtures declare their
+    doc_version and superseded flag this way)."""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}
+    meta: dict[str, Any] = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        key, _, value = line.partition(":")
+        if key.strip() in ("title", "doc_version", "date", "family", "superseded"):
+            meta[key.strip()] = value.strip()
+    if "superseded" in meta:
+        meta["superseded"] = str(meta["superseded"]).lower() == "true"
+    return meta
+
+
 def _entries(folder: Path) -> list[tuple[Path, dict[str, Any]]]:
     index = folder / "_index.json"
     if index.exists():
@@ -75,7 +95,7 @@ def _entries(folder: Path) -> list[tuple[Path, dict[str, Any]]]:
     for path in sorted(folder.iterdir()):
         if path.is_file() and path.suffix.lower() in DOC_SUFFIXES \
                 and not path.name.lower().startswith("readme"):
-            found.append((path, {}))
+            found.append((path, front_matter(path) if path.suffix.lower() == ".md" else {}))
     return found
 
 
@@ -133,7 +153,10 @@ def quarantine(root: Path, run_id: str, doc: SourceDoc, reasons: dict[str, str])
     """Move a failed document out of the input folders, with the reasons next to it."""
     target = root / "quarantine" / run_id / doc.batch / doc.path.name
     target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(doc.path), target)
+    try:
+        shutil.move(str(doc.path), target)
+    except OSError:  # a read-only input folder (the CI fixtures in the image): keep a copy
+        shutil.copy2(doc.path, target)
     target.with_name(target.name + ".reason.json").write_text(
         json.dumps({"doc_id": doc.doc_id, "batch": doc.batch, "sha256": doc.sha256,
                     "failed_checks": reasons, "quarantined_at": run_id}, indent=1),
@@ -212,6 +235,7 @@ def cmd_restore(settings: Any, root: Path, family: str, version: str) -> int:
         current = entry.get("doc_version") == version
         n = set_superseded(col, doc_id, superseded=not current)
         entry["status"] = "active" if current else "archived"
+        entry["superseded"] = not current
         print(f"{'restored' if current else 'archived'}  {doc_id} ({entry.get('doc_version')}): "
               f"{n} chunks, superseded={not current}")
     ledger.pins[family] = version
@@ -241,7 +265,7 @@ def main() -> int:
     unpin.add_argument("--family", required=True)
     args = parser.parse_args()
     settings = get_settings()
-    root = Path(settings.corpus_dir)
+    root = Path(settings.lake_dir or settings.corpus_dir)
     if args.cmd == "counts":
         return cmd_counts(settings, root)
     if args.cmd == "restore":

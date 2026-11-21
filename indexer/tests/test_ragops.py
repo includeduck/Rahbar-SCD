@@ -199,7 +199,10 @@ def test_a_newer_version_archives_the_old_one_and_restore_brings_it_back(
                ["metadatas"])
     rerun = h.run()                                                # the pin holds
     assert rerun["embedded_chunks"] == 0
+    assert rerun["restored"] == 0 and rerun["archived"] == 0       # nothing left to flip
     assert not any(m["superseded"] for m in h.col.get(where={"doc_id": "fees"})["metadatas"])
+    reason = verify_rows(h)["fees-2027.md"]["checks"]["recency"]["reason"]
+    assert "pinned as current by a restore" in reason
 
 
 # ---------------------------------------------------------------------------
@@ -248,3 +251,25 @@ def test_empty_garbled_unversioned_and_truncated_documents_fail(h: Harness) -> N
         or "truncated" in rows["cut.pdf"]["checks"]["completeness"]["reason"]
     assert all(rows[f]["decision"] == "quarantine"
                for f in ("empty.md", "garbled.md", "untitled.md", "cut.pdf"))
+
+
+def test_front_matter_without_an_index_and_a_separate_lake_dir(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CI fixtures: no _index.json, front matter only, in a folder the Job cannot write;
+    LAKE_DIR points elsewhere. The 2023 edition must stay superseded."""
+    docs, lake = tmp_path / "fixtures", tmp_path / "lake"
+    docs.mkdir()
+    (docs / "rules-2023.md").write_text(
+        "---\ndoc_version: 2023\nsuperseded: true\n---\n# Rules (2023)\n\n" + RULES,
+        encoding="utf-8")
+    (docs / "rules-2026.md").write_text(
+        "---\ndoc_version: 2026\nsuperseded: false\n---\n# Rules (2026)\n\n"
+        + RULES.replace("twenty", "fifteen"), encoding="utf-8")
+    h = Harness(lake, monkeypatch)
+    h.settings = IndexerSettings(**{**h.settings.__dict__, "corpus_dir": str(docs),
+                                    "lake_dir": str(lake)})
+    h.run()
+    assert all(m["superseded"] for m in h.col.get(where={"doc_id": "rules-2023"})["metadatas"])
+    assert not any(m["superseded"]
+                   for m in h.col.get(where={"doc_id": "rules-2026"})["metadatas"])
+    assert (lake / "state" / "ledger.json").exists() and not (docs / "state").exists()
