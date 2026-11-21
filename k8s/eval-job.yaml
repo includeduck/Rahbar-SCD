@@ -1,0 +1,67 @@
+# The Part B suite as a Kubernetes Job (Assignment 03, Parts B and F): module, component and
+# end-to-end levels, run twice with fixed seeds, against the api Service and Chroma. Result
+# files go to the eval-results volume (k8s/base/eval.yaml); the summary table is in the logs.
+#
+#   kubectl -n rahbar delete job eval-suite --ignore-not-found
+#   kubectl apply -f k8s/eval-job.yaml
+#   kubectl -n rahbar logs -f job/eval-suite
+#
+# Copy the result files out with the helper pod in k8s/results-shell.yaml. With llama3.2:3b on
+# a laptop CPU one end-to-end pass of 30 questions takes 10 to 20 minutes, so allow about 40.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eval-suite
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+spec:
+  backoffLimit: 0                 # a failed evaluation is looked at, not retried
+  activeDeadlineSeconds: 10800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: eval
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: eval
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: eval
+          image: rahbar-eval:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "eval.suite"]
+          args: ["--runs", "2", "--seed", "42"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - {name: EVAL_API, value: "http://api:8000"}
+            - {name: EVAL_LABEL, value: "baseline"}
+            - {name: EVAL_RESULTS_DIR, value: "/results"}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: results, mountPath: /results}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: eval-results
+        - name: tmp
+          emptyDir: {}

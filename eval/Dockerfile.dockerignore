@@ -1,0 +1,14 @@
+# Used by BuildKit when building with -f eval/Dockerfile from the repository root.
+# Allow-list: the api package and the suite's code and inputs, not results or fixtures.
+*
+!api/requirements.txt
+!api/app/
+!eval/__init__.py
+!eval/*.py
+!eval/golden.jsonl
+!eval/embedding_pairs.json
+!eval/judge_labels.jsonl
+!eval/gate.yaml
+!eval/noise/
+**/__pycache__
+**/*.pyc

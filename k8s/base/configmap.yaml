@@ -44,6 +44,9 @@ data:
   CACHE_THRESHOLD: "0.97"
   # Facts and JSON need low randomness; 0 still cannot fix knowledge the corpus lacks.
   TEMPERATURE: "0.1"
+  # Assignment 03, Part B: a fixed sampling seed, so two runs of the evaluation suite give
+  # comparable answers. Sent to Ollama as options.seed.
+  LLM_SEED: "42"
 
   # Indexer chunking, in words. Placeholders until phase 11 measures three settings.
   CHUNK_SIZE: "400"

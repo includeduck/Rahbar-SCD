@@ -1,0 +1,102 @@
+# What the evaluation Job (k8s/eval-job.yaml, Assignment 03 Parts B, C and F) needs to exist
+# before it runs: a volume for its result files, its own ServiceAccount, and network paths.
+# NetworkPolicies add up, so the rules below only open eval -> api and eval -> chroma; the
+# policies in networkpolicy.yaml are unchanged. Ollama egress is per overlay, like the api's.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: eval-results
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eval
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+automountServiceAccountToken: false
+---
+# The eval pods call the api (end-to-end level) and query Chroma (retrieval level).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: eval
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: eval
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: [api, api-candidate]
+      ports:
+        - protocol: TCP
+          port: 8000
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: chroma
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-from-eval
+  namespace: rahbar
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [api, api-candidate]
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: eval
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chroma-from-eval
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: chroma
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: eval
+      ports:
+        - protocol: TCP
+          port: 8000

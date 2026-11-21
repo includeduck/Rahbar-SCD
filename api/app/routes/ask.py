@@ -19,6 +19,10 @@ log = logging.getLogger("rahbar.api")
 def ask(body: AskRequest, request: Request) -> JSONResponse:
     state = request.app.state
     cache = getattr(state, "cache", None)
+    # "Cache-Control: no-cache" skips the semantic cache for this request, lookup and store
+    # (the Part B suite uses it, so a second run measures the pipeline, not the cache).
+    if "no-cache" in request.headers.get("cache-control", "").lower():
+        cache = None
 
     # Embed the question once — reused by both cache lookup and retrieval
     query_vec: list[float] | None = None

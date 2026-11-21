@@ -20,6 +20,7 @@ resources:
   - hpa.yaml
   - networkpolicy.yaml
   - traces.yaml                 # Assignment 03: the query traces volume
+  - eval.yaml                   # Assignment 03: what the eval Job needs (k8s/eval-job.yaml)
 
 patches:
   - path: api-traces-patch.yaml

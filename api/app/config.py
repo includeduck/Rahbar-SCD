@@ -40,6 +40,9 @@ class Settings:
     top_k: int = 5                   # passages retrieved (and returned, so recall@5 is measurable)
     max_context_passages: int = 3    # the best of those that go into the prompt
     temperature: float = 0.2
+    # Assignment 03, Part B: a fixed sampling seed, so two runs of the suite can be compared.
+    # Sent to Ollama as options.seed; the hosted provider passes it as `seed`. -1 = no seed.
+    llm_seed: int = -1
     llm_model: str = "llama3.2:3b"
     llm_timeout_seconds: float = 120.0   # per generation attempt
     ollama_url: str = "http://host.minikube.internal:11434"
@@ -67,6 +70,7 @@ def get_settings() -> Settings:
         top_k=_int("TOP_K", 5),
         max_context_passages=_int("MAX_CONTEXT_PASSAGES", 3),
         temperature=_float("TEMPERATURE", 0.2),
+        llm_seed=_int("LLM_SEED", -1),
         llm_model=os.environ.get("LLM_MODEL", "llama3.2:3b"),
         llm_timeout_seconds=_float("LLM_TIMEOUT_SECONDS", 120.0),
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),

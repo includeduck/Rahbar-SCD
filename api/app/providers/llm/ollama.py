@@ -60,10 +60,13 @@ class OllamaProvider:
             "stream": False,
             "options": {"temperature": self.settings.temperature},
         }
+        if self.settings.llm_seed >= 0:
+            payload["options"]["seed"] = self.settings.llm_seed  # type: ignore[index]
 
         last_error: str = ""
         params = {"temperature": self.settings.temperature, "format": "Answer JSON schema",
-                  "stream": False, "timeout_s": self.settings.llm_timeout_seconds}
+                  "stream": False, "timeout_s": self.settings.llm_timeout_seconds,
+                  "seed": self.settings.llm_seed if self.settings.llm_seed >= 0 else None}
         for attempt in range(1 + RETRIES):
             started = time.perf_counter()
             call: dict[str, object] = {"provider": self.name, "model": self.settings.llm_model,

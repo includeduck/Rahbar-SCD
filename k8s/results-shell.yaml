@@ -1,0 +1,46 @@
+# A helper pod with the eval-results volume mounted read-only, to copy the suite's result
+# files into the repository (eval/results/). It removes itself after an hour.
+#
+#   kubectl apply -f k8s/results-shell.yaml && kubectl -n rahbar wait --for=condition=ready pod/results-shell
+#   kubectl -n rahbar exec results-shell -- ls -l /results
+#   kubectl -n rahbar cp results-shell:/results/<file> eval/results/<file>
+#   kubectl -n rahbar delete pod results-shell
+apiVersion: v1
+kind: Pod
+metadata:
+  name: results-shell
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+spec:
+  serviceAccountName: eval
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  restartPolicy: Never
+  activeDeadlineSeconds: 3600
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: shell
+      image: rahbar-eval:dev
+      imagePullPolicy: IfNotPresent
+      command: ["python", "-c", "import time; time.sleep(3600)"]
+      resources:
+        requests: {cpu: 10m, memory: 32Mi}
+        limits: {cpu: 200m, memory: 128Mi}
+      volumeMounts:
+        - {name: results, mountPath: /results, readOnly: true}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: {drop: [ALL]}
+  volumes:
+    - name: results
+      persistentVolumeClaim:
+        claimName: eval-results
