@@ -55,8 +55,11 @@ How the numbers were chosen:
   answer on this CPU) and embedding are most of the work, and they sit outside the cluster's
   accounting.
 
-The suite was re-run after these values were applied (`suite-rebase`, below in Part E), with
-no restarts and no OOM kills.
+The suite was re-run after these values were applied: 43 questions twice, 42 min
+([top-suite-rebase.tsv](top-suite-rebase.tsv), [peak-suite-rebase.tsv](peak-suite-rebase.tsv)).
+No container restarted and none was OOM-killed. The api stayed at 47-52 MiB (93m CPU at
+most). Chroma, freshly restarted with a cold page cache, used 73-76 MiB (peak 81), well
+inside its new request.
 
 ## Two findings while releasing on Kubernetes
 
