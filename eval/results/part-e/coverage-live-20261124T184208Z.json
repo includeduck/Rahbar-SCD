@@ -1,0 +1,742 @@
+{
+ "queries": 42,
+ "covered": 15,
+ "share": 0.3571,
+ "similarity": 0.7,
+ "min_share": 0.85,
+ "group_threshold": 0.55,
+ "passed": false,
+ "golden_questions": 30,
+ "by_domain": {
+  "in": {
+   "queries": 28,
+   "covered": 14
+  },
+  "out": {
+   "queries": 14,
+   "covered": 1
+  }
+ },
+ "sensitivity": {
+  "0.60": 0.6429,
+  "0.65": 0.4286,
+  "0.70": 0.3571,
+  "0.75": 0.2619,
+  "0.80": 0.2143
+ },
+ "rows": [
+  {
+   "id": "live-l01",
+   "query": "what gpa do i need so i don't get put on probation",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.6966,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic warning",
+   "nearest": "s05",
+   "nearest_question": "What is the lowest grade point average I can have without being warned academically?",
+   "similarity": 0.6956,
+   "covered": false
+  },
+  {
+   "id": "live-l02",
+   "query": "How many classes can I miss before I'm not allowed to sit the final?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.7132,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "attendance",
+   "nearest": "q09",
+   "nearest_question": "If I fail a course, when do I have to retake it under the current rules?",
+   "similarity": 0.6797,
+   "covered": false
+  },
+  {
+   "id": "live-l03",
+   "query": "Can my HOD excuse my absences if I was sick for two weeks?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.6291,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "attendance",
+   "nearest": "s06",
+   "nearest_question": "If I was ill, up to what share of my classes can the HoD excuse?",
+   "similarity": 0.8352,
+   "covered": true
+  },
+  {
+   "id": "live-l04",
+   "query": "I failed Data Structures. When do I have to take it again?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6443,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "repeating courses",
+   "nearest": "q09",
+   "nearest_question": "If I fail a course, when do I have to retake it under the current rules?",
+   "similarity": 0.7323,
+   "covered": true
+  },
+  {
+   "id": "live-l05",
+   "query": "how many times am i allowed to repeat a course i failed",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7915,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "repeating courses",
+   "nearest": "q05",
+   "nearest_question": "How many times can a failed course be repeated?",
+   "similarity": 0.9503,
+   "covered": true
+  },
+  {
+   "id": "live-l06",
+   "query": "What is an A- worth in grade points?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7123,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "grading",
+   "nearest": "q06",
+   "nearest_question": "How many grade points is a B+ worth?",
+   "similarity": 0.8228,
+   "covered": true
+  },
+  {
+   "id": "live-l07",
+   "query": "Do I get any fee back if I drop a course in the third week?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7538,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "fees and refunds",
+   "nearest": "q07",
+   "nearest_question": "What is the refund policy if a student drops a course after 10 days?",
+   "similarity": 0.7453,
+   "covered": true
+  },
+  {
+   "id": "live-l08",
+   "query": "Am I allowed to use ChatGPT for my assignments?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.6769,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "generative AI policy",
+   "nearest": "q08",
+   "nearest_question": "What does the Generative AI policy say about using AI tools in assignments?",
+   "similarity": 0.6152,
+   "covered": false
+  },
+  {
+   "id": "live-l09",
+   "query": "Can I take 6 courses this semester?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7014,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "course load",
+   "nearest": "q10",
+   "nearest_question": "Can a student register for more than five courses in a semester?",
+   "similarity": 0.8346,
+   "covered": true
+  },
+  {
+   "id": "live-l10",
+   "query": "What's the per credit hour fee for BS this year?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6172,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "fees and refunds",
+   "nearest": "q13",
+   "nearest_question": "What is the tuition fee per credit hour for BS programmes?",
+   "similarity": 0.8629,
+   "covered": true
+  },
+  {
+   "id": "live-l11",
+   "query": "What time should I be at the exam hall?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.767,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "exam hall rules",
+   "nearest": "s01",
+   "nearest_question": "How early must students reach the examination hall before a paper starts?",
+   "similarity": 0.7821,
+   "covered": true
+  },
+  {
+   "id": "live-l12",
+   "query": "Last date to withdraw from a course?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.8313,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "course withdrawal",
+   "nearest": "s03",
+   "nearest_question": "Until which week of a regular semester can I withdraw from a course?",
+   "similarity": 0.8454,
+   "covered": true
+  },
+  {
+   "id": "live-l13",
+   "query": "If I withdraw from a course will it show W on my transcript?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.8168,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "course withdrawal",
+   "nearest": "s02",
+   "nearest_question": "What grade shows on my transcript for a course I withdraw from, and does it count towards my CGPA?",
+   "similarity": 0.8007,
+   "covered": true
+  },
+  {
+   "id": "live-l14",
+   "query": "What happens if I stay on warning for two semesters in a row?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7024,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic warning",
+   "nearest": "q03",
+   "nearest_question": "What happens if a student remains on academic warning for multiple consecutive semesters?",
+   "similarity": 0.8849,
+   "covered": true
+  },
+  {
+   "id": "live-l15",
+   "query": "Can I transfer my FYP credits from my previous university?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.8138,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "credit transfer",
+   "nearest": "q17",
+   "nearest_question": "Are FYP credits transferable from another institution?",
+   "similarity": 0.9138,
+   "covered": true
+  },
+  {
+   "id": "live-l16",
+   "query": "Is there a hostel at the Islamabad campus?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7499,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "hostels",
+   "nearest": "q04",
+   "nearest_question": "Which campuses have an in-campus hostel?",
+   "similarity": 0.7879,
+   "covered": true
+  },
+  {
+   "id": "live-l17",
+   "query": "What are the library opening hours during exams?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.8037,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "library services",
+   "nearest": "s01",
+   "nearest_question": "How early must students reach the examination hall before a paper starts?",
+   "similarity": 0.6393,
+   "covered": false
+  },
+  {
+   "id": "live-l18",
+   "query": "How many books can I borrow from the library and for how long?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.7453,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "library services",
+   "nearest": "q10",
+   "nearest_question": "Can a student register for more than five courses in a semester?",
+   "similarity": 0.561,
+   "covered": false
+  },
+  {
+   "id": "live-l19",
+   "query": "What is the fine for returning a library book late?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.7503,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "library services",
+   "nearest": "q07",
+   "nearest_question": "What is the refund policy if a student drops a course after 10 days?",
+   "similarity": 0.6165,
+   "covered": false
+  },
+  {
+   "id": "live-l20",
+   "query": "Can I access the library's online journals from home?",
+   "count": 1,
+   "outcome": "fallback",
+   "top1": 0.62,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "library services",
+   "nearest": "q04",
+   "nearest_question": "Which campuses have an in-campus hostel?",
+   "similarity": 0.4699,
+   "covered": false
+  },
+  {
+   "id": "live-l21",
+   "query": "What is the penalty for plagiarism in an assignment?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7777,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic integrity",
+   "nearest": "q08",
+   "nearest_question": "What does the Generative AI policy say about using AI tools in assignments?",
+   "similarity": 0.6081,
+   "covered": false
+  },
+  {
+   "id": "live-l22",
+   "query": "What counts as plagiarism according to the university?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.7487,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic integrity",
+   "nearest": "s07",
+   "nearest_question": "I did my final year project credits at another university. Can they be counted here?",
+   "similarity": 0.6471,
+   "covered": false
+  },
+  {
+   "id": "live-l23",
+   "query": "What happens if I'm caught cheating in an exam?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7081,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic integrity",
+   "nearest": "q09",
+   "nearest_question": "If I fail a course, when do I have to retake it under the current rules?",
+   "similarity": 0.6098,
+   "covered": false
+  },
+  {
+   "id": "live-l24",
+   "query": "Is my thesis checked with Turnitin?",
+   "count": 1,
+   "outcome": "abstain_floor",
+   "top1": 0.5618,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "academic integrity",
+   "nearest": "s07",
+   "nearest_question": "I did my final year project credits at another university. Can they be counted here?",
+   "similarity": 0.5516,
+   "covered": false
+  },
+  {
+   "id": "live-l25",
+   "query": "Can I freeze my semester because of a medical problem?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.782,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "semester freeze",
+   "nearest": "q03",
+   "nearest_question": "What happens if a student remains on academic warning for multiple consecutive semesters?",
+   "similarity": 0.6752,
+   "covered": false
+  },
+  {
+   "id": "live-l26",
+   "query": "How many semesters can I freeze during my degree?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.8269,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "semester freeze",
+   "nearest": "q10",
+   "nearest_question": "Can a student register for more than five courses in a semester?",
+   "similarity": 0.7216,
+   "covered": true
+  },
+  {
+   "id": "live-l27",
+   "query": "Do I have to pay fees for a frozen semester?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7502,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "semester freeze",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.6286,
+   "covered": false
+  },
+  {
+   "id": "live-l28",
+   "query": "How do I resume my studies after freezing a semester?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.7737,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "in",
+   "topic": "semester freeze",
+   "nearest": "s03",
+   "nearest_question": "Until which week of a regular semester can I withdraw from a course?",
+   "similarity": 0.6271,
+   "covered": false
+  },
+  {
+   "id": "live-l29",
+   "query": "How do I connect my phone to the campus Wi-Fi?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.5866,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s11",
+   "nearest_question": "Which bus route goes from Johar Town to the Lahore campus?",
+   "similarity": 0.5205,
+   "covered": false
+  },
+  {
+   "id": "live-l30",
+   "query": "What's the student wifi password?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6053,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5326,
+   "covered": false
+  },
+  {
+   "id": "live-l31",
+   "query": "Is there a limit on how much data I can download on the campus Wi-Fi?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.5899,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "q11",
+   "nearest_question": "Under the 2023 rules, could a student take extra courses beyond the normal load?",
+   "similarity": 0.553,
+   "covered": false
+  },
+  {
+   "id": "live-l32",
+   "query": "How do I reset my university email password?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.585,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5352,
+   "covered": false
+  },
+  {
+   "id": "live-l33",
+   "query": "I can't log in to the student portal, who do I contact?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6212,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5623,
+   "covered": false
+  },
+  {
+   "id": "live-l34",
+   "query": "How do I set up two-factor authentication on my student account?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.606,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "q10",
+   "nearest_question": "Can a student register for more than five courses in a semester?",
+   "similarity": 0.5194,
+   "covered": false
+  },
+  {
+   "id": "live-l35",
+   "query": "Do students get Microsoft Office free with their university email?",
+   "count": 1,
+   "outcome": "abstain_floor",
+   "top1": 0.5796,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5777,
+   "covered": false
+  },
+  {
+   "id": "live-l36",
+   "query": "How much storage do we get on our university Google Drive?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.585,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s09",
+   "nearest_question": "How much does it cost to park a car on campus for a semester?",
+   "similarity": 0.5651,
+   "covered": false
+  },
+  {
+   "id": "live-l37",
+   "query": "Where can I print my assignment on campus and how much does a page cost?",
+   "count": 1,
+   "outcome": "answered",
+   "top1": 0.6221,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s09",
+   "nearest_question": "How much does it cost to park a car on campus for a semester?",
+   "similarity": 0.6232,
+   "covered": false
+  },
+  {
+   "id": "live-l38",
+   "query": "Does the university give students free GitHub Copilot or Azure credits?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6246,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5762,
+   "covered": false
+  },
+  {
+   "id": "live-l39",
+   "query": "My laptop broke, does the IT department lend laptops to students?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6278,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "q07",
+   "nearest_question": "What is the refund policy if a student drops a course after 10 days?",
+   "similarity": 0.5653,
+   "covered": false
+  },
+  {
+   "id": "live-l40",
+   "query": "Which VPN do I use to reach university systems from home?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6165,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "s12",
+   "nearest_question": "Does the university pay the visa fees of international students?",
+   "similarity": 0.5589,
+   "covered": false
+  },
+  {
+   "id": "live-l41",
+   "query": "How do I install MATLAB with the university licence?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.5811,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "q12",
+   "nearest_question": "What does clause 1.21 of the academic rules require?",
+   "similarity": 0.4786,
+   "covered": false
+  },
+  {
+   "id": "live-l42",
+   "query": "Is the Wi-Fi in the hostels the same network as on campus?",
+   "count": 1,
+   "outcome": "abstain_model",
+   "top1": 0.6009,
+   "collection": "rahbar-nomic-embed-text-c250o50",
+   "domain": "out",
+   "topic": "campus IT services",
+   "nearest": "q04",
+   "nearest_question": "Which campuses have an in-campus hostel?",
+   "similarity": 0.7101,
+   "covered": true
+  }
+ ],
+ "groups": [
+  {
+   "topic": "What's the student wifi password?",
+   "queries": [
+    "live-l30",
+    "live-l29",
+    "live-l33",
+    "live-l32",
+    "live-l34",
+    "live-l31"
+   ],
+   "author_topics": [
+    "campus IT services"
+   ]
+  },
+  {
+   "topic": "What is the penalty for plagiarism in an assignment?",
+   "queries": [
+    "live-l21",
+    "live-l22",
+    "live-l37",
+    "live-l23"
+   ],
+   "author_topics": [
+    "academic integrity",
+    "campus IT services"
+   ]
+  },
+  {
+   "topic": "Can I freeze my semester because of a medical problem?",
+   "queries": [
+    "live-l25",
+    "live-l28",
+    "live-l27",
+    "live-l02"
+   ],
+   "author_topics": [
+    "attendance",
+    "semester freeze"
+   ]
+  },
+  {
+   "topic": "What is the fine for returning a library book late?",
+   "queries": [
+    "live-l19",
+    "live-l18",
+    "live-l17"
+   ],
+   "author_topics": [
+    "library services"
+   ]
+  },
+  {
+   "topic": "Does the university give students free GitHub Copilot or Azure credits?",
+   "queries": [
+    "live-l38",
+    "live-l35",
+    "live-l39"
+   ],
+   "author_topics": [
+    "campus IT services"
+   ]
+  },
+  {
+   "topic": "Can I access the library's online journals from home?",
+   "queries": [
+    "live-l20",
+    "live-l40"
+   ],
+   "author_topics": [
+    "campus IT services",
+    "library services"
+   ]
+  },
+  {
+   "topic": "what gpa do i need so i don't get put on probation",
+   "queries": [
+    "live-l01"
+   ],
+   "author_topics": [
+    "academic warning"
+   ]
+  },
+  {
+   "topic": "Am I allowed to use ChatGPT for my assignments?",
+   "queries": [
+    "live-l08"
+   ],
+   "author_topics": [
+    "generative AI policy"
+   ]
+  },
+  {
+   "topic": "Is my thesis checked with Turnitin?",
+   "queries": [
+    "live-l24"
+   ],
+   "author_topics": [
+    "academic integrity"
+   ]
+  },
+  {
+   "topic": "How much storage do we get on our university Google Drive?",
+   "queries": [
+    "live-l36"
+   ],
+   "author_topics": [
+    "campus IT services"
+   ]
+  },
+  {
+   "topic": "How do I install MATLAB with the university licence?",
+   "queries": [
+    "live-l41"
+   ],
+   "author_topics": [
+    "campus IT services"
+   ]
+  }
+ ],
+ "label": "live",
+ "source": "trace log /traces (prefix 'live-')",
+ "embed_model": "nomic-embed-text",
+ "golden_file": "/golden/golden.jsonl",
+ "time": "20261124T184208Z"
+}

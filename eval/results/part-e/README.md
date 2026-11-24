@@ -8,6 +8,7 @@ Run on 24 Nov 2026 on the WSL minikube, against the live api (collection
 | E1 send the live queries | Job `live-traffic` ([k8s/live-traffic-job.yaml](../../../k8s/live-traffic-job.yaml), `eval/live_traffic.py`) | [live-traffic-job.log](live-traffic-job.log), [live-query-log.jsonl](live-query-log.jsonl) (the 42 traces, without prompts) |
 | E2 coverage, before | Job `coverage-check` ([k8s/coverage-job.yaml](../../../k8s/coverage-job.yaml), `eval/coverage.py`), label `before` | [coverage-before-20261124T165140Z.md](coverage-before-20261124T165140Z.md) (+ .json), [job log](coverage-before-job.log): **Failed** |
 | E4 coverage, after 13 new golden questions | the same Job, label `after`, image rebuilt with the new golden set | [coverage-after-20261124T165552Z.md](coverage-after-20261124T165552Z.md) (+ .json), [job log](coverage-after-job.log): **Complete** |
+| E screenshots: before and after, both on the cluster | Job `coverage-check`; for before, the 30-question golden set from git in the ConfigMap `coverage-golden` | [coverage-live-20261124T184208Z.md](coverage-live-20261124T184208Z.md) (35.7%, Failed), [coverage-live-20261124T184339Z.md](coverage-live-20261124T184339Z.md) (85.7%, Complete); `report/screenshots/E-coverage-*.png` |
 | E4 re-run the suite | Job `eval-suite` on the 43-question golden set | [eval-suite-after-e4-job.log](eval-suite-after-e4-job.log) and the suite result below |
 
 ## E1. The live query log
