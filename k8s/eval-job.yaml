@@ -57,6 +57,9 @@ spec:
             - {name: EVAL_RESULTS_DIR, value: "/results"}
             - {name: EVAL_GATE, value: "1"}
             - {name: EVAL_SAVE_BASELINE, value: "1"}
+            # "1" only for the first run after the golden set changed on purpose: the gate then
+            # applies its absolute rules only, and a pass becomes the new baseline.
+            - {name: EVAL_REBASE, value: "0"}
             - {name: GATE_CONFIG, value: "/config/gate.yaml"}
           resources:
             requests: {cpu: 50m, memory: 128Mi}

@@ -49,7 +49,7 @@ def test_ready_when_every_dependency_answers() -> None:
     result = check_readiness(fake_chroma(), FakeRedis(), SETTINGS)
     assert result.ready
     assert set(result.checks) == {"chroma", "collection", "embed_model", "redis"}
-    assert result.checks["collection"] == "ok (3 chunks)"
+    assert result.checks["collection"] == "ok (rahbar, 3 chunks)"     # the name: the suite reads it
 
 
 def test_not_ready_before_the_indexer_has_run() -> None:

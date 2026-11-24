@@ -48,8 +48,11 @@ data:
   # comparable answers. Sent to Ollama as options.seed.
   LLM_SEED: "42"
 
-  # Indexer chunking, in words. Placeholders until phase 11 measures three settings.
-  CHUNK_SIZE: "400"
+  # Indexer chunking, in words. 250 since the Part C release (24 Nov 2026; 400 before): the
+  # gate passed it (eval/results/part-c). It names the collection the ingestion Job writes,
+  # rahbar-<model>-c<size>o<overlap>, so it must match RETRIEVAL_COLLECTION in
+  # api-release.yaml, or the CronJob would keep a collection the api no longer reads.
+  CHUNK_SIZE: "250"
   CHUNK_OVERLAP: "50"
   # The Job's fetch-corpus initContainer downloads the documents here (the corpus-data PVC).
   CORPUS_DIR: "/corpus"

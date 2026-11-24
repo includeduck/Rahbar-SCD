@@ -88,6 +88,20 @@ def test_different_golden_sets_are_not_compared() -> None:
     assert golden_fingerprint(reviewed) == golden_fingerprint(base)
 
 
+def test_rebase_applies_only_the_absolute_rules_to_a_new_golden_set() -> None:
+    base = result(recall5=0.90)                       # would fail max_drop if compared
+    cand = result(recall5=0.60)
+    cand["golden_questions"][0]["question"] = "A different question?"
+    passed, rows = evaluate(load_config(DEFAULT_CONFIG), cand, base, rebase=True)
+    outcome = {r["metric"]: r["outcome"] for r in rows}
+    assert passed and outcome["golden set"] == "REBASE"
+    assert outcome["component.base.recall@5"] == "SKIP"            # nothing to compare with
+    assert outcome["e2e.faithfulness"] == "PASS"                    # absolute rules still apply
+    low = result(faithfulness=0.50)
+    low["golden_questions"][0]["question"] = "A different question?"
+    assert not evaluate(load_config(DEFAULT_CONFIG), low, base, rebase=True)[0]
+
+
 def test_a_threshold_edit_changes_the_outcome(tmp_path: Path) -> None:
     """F2: the same results, a stricter number in the config, a different decision."""
     cand_path, base_path = tmp_path / "cand.json", tmp_path / "base.json"

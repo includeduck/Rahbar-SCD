@@ -98,7 +98,8 @@ def check_chroma(http: httpx.Client, settings: Settings, result: Readiness) -> R
     count = int(http.get(f"{COLLECTIONS}/{collection['id']}/count").json())
     if count == 0:
         return result.fail("collection", f"{collection_name!r} is empty")
-    result.checks["collection"] = f"ok ({count} chunks)"
+    # The name too: the eval suite reads it to measure the collection the api serves.
+    result.checks["collection"] = f"ok ({collection_name}, {count} chunks)"
 
     conflict = pin_conflict(collection.get("metadata") or {}, settings)
     if conflict:

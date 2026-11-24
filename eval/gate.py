@@ -73,14 +73,25 @@ def metric(result: dict[str, Any], name: str, how: str = "mean") -> float | None
 
 
 def evaluate(config: dict[str, Any], candidate: dict[str, Any],
-             baseline: dict[str, Any] | None) -> tuple[bool, list[dict[str, Any]]]:
+             baseline: dict[str, Any] | None,
+             rebase: bool = False) -> tuple[bool, list[dict[str, Any]]]:
+    """Apply every rule. Results on different golden sets fail the gate, unless `rebase`
+    says the golden set changed on purpose: then nothing is compared with the old baseline
+    (its numbers answer other questions), only the absolute rules apply, and a pass makes
+    this result the new baseline."""
     rows: list[dict[str, Any]] = []
     default_how = config.get("aggregate", "mean")
     if baseline is not None and golden_fingerprint(baseline) != golden_fingerprint(candidate):
         rows.append({"metric": "golden set", "baseline": golden_fingerprint(baseline),
                      "candidate": golden_fingerprint(candidate), "rule": "same questions",
-                     "outcome": "FAIL", "why": "results on different golden sets are not "
-                                               "comparable: re-run the baseline"})
+                     "outcome": "REBASE" if rebase else "FAIL",
+                     "why": ("the golden set changed on purpose (--rebase): the relative "
+                             "rules are skipped and only the absolute ones apply") if rebase
+                     else ("results on different golden sets are not comparable: re-run the "
+                           "baseline, with --rebase (EVAL_REBASE=1) if the golden set "
+                           "changed on purpose")})
+        if rebase:
+            baseline = None
     for rule in config["rules"]:
         name, how = rule["metric"], rule.get("aggregate", default_how)
         cand = metric(candidate, name, how)
@@ -105,7 +116,7 @@ def evaluate(config: dict[str, Any], candidate: dict[str, Any],
             ok = cand is not None and cand >= base - allowed - 1e-9
         row["outcome"] = "PASS" if ok else ("FAIL" if cand is not None else "FAIL (missing)")
         rows.append(row)
-    passed = all(r["outcome"] in ("PASS", "SKIP") for r in rows)
+    passed = all(r["outcome"] in ("PASS", "SKIP", "REBASE") for r in rows)
     return passed, rows
 
 
@@ -141,12 +152,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--json", type=Path, help="also write the decision here")
+    parser.add_argument("--rebase", action="store_true",
+                        help="the golden set changed on purpose: absolute rules only")
     args = parser.parse_args(argv)
     candidate = json.loads(args.candidate.read_text(encoding="utf-8"))
     baseline = (json.loads(args.baseline.read_text(encoding="utf-8"))
                 if args.baseline and args.baseline.exists() else None)
     config = load_config(args.config)
-    passed, rows = evaluate(config, candidate, baseline)
+    passed, rows = evaluate(config, candidate, baseline, rebase=args.rebase)
     print(render(rows, passed, label(candidate, "candidate"), label(baseline, "baseline")))
     if args.json:
         args.json.write_text(json.dumps({"passed": passed, "rows": rows, "config": args.config},

@@ -167,3 +167,25 @@ def test_summary_table_has_one_row_per_metric_and_the_difference() -> None:
     assert "| component | recall@5 | 0.75 | 0.75 | 0 |" in table
     assert "| e2e | latency p95 (s) | 61.2 | 61.2 | 0 |" in table
     assert "nDCG@5" not in table                                       # no value, no row
+
+
+# ---------------------------------------------------------------------------
+# Which collection the suite measures
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("check,name", [
+    ("ok (rahbar-nomic-embed-text-c250o50, 885 chunks)", "rahbar-nomic-embed-text-c250o50"),
+    ("ok (885 chunks)", None),                                 # an older api: no name
+    ("'x' does not exist yet; run the indexer", None),
+])
+def test_the_suite_reads_the_served_collection_from_readyz(check: str, name: str | None) -> None:
+    import httpx
+
+    from eval.suite import Suite
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"status": "ready", "checks": {"collection": check}})
+
+    suite = Suite.__new__(Suite)                                # no cluster: only the api client
+    suite.api = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://api")
+    assert suite.served_collection() == name

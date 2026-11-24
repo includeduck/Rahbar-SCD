@@ -18,7 +18,10 @@ Writes eval/results/suite-<label>-<UTC timestamp>.json (every number and every a
 (eval/agreement.py reports how often the judge agrees with those labels).
 
 Retrieval uses the api's own ChromaRetriever and guardrails, so the component level measures
-the code that serves users. Settings come from the same environment variables as the api
+the code that serves users, on the collection the api serves: the suite reads its name from
+the api's /readyz, and stops if --collection names another one. (Following the rahbar-active
+pointer instead measured an old collection after a release that pinned the api, and the
+judge then read the wrong chunks' text as evidence: Part E.) Settings come from the same environment variables as the api
 (the rahbar-config ConfigMap in the cluster).
 """
 
@@ -27,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -53,6 +57,7 @@ from eval import metrics as M  # noqa: E402
 from eval.run_eval import citation_validity, injection_outcome  # noqa: E402
 
 LEVELS = ("module", "component", "e2e")
+READY_COLLECTION = re.compile(r"^ok \((?P<name>[^,()]+), \d+ chunks\)$")
 MIN_COUNTS = {"total": 25, "answerable": 15, "unanswerable": 5, "hard": 5, "human": 8}
 
 
@@ -124,6 +129,20 @@ class Suite:
         self._collection_id: str | None = None
 
     # -- helpers ---------------------------------------------------------------------
+    def served_collection(self) -> str | None:
+        """The collection the api serves, from its readiness report; None if it does not
+        say (an api older than Assignment 03, Part E)."""
+        try:
+            check = self.api.get("/readyz").json().get("checks", {}).get("collection", "")
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+        m = READY_COLLECTION.match(str(check))
+        return m.group("name") if m else None
+
+    def use_collection(self, name: str) -> None:
+        self.retriever._resolve_collection_name = lambda: name  # type: ignore
+        self._collection_id = None
+
     def embed(self, texts: list[str]) -> list[list[float]]:
         resp = self.ollama.post("/api/embed", json={"model": self.settings.embed_model,
                                                     "input": texts})
@@ -540,6 +559,10 @@ def main(argv: list[str] | None = None) -> int:
                         default=Path(os.environ["EVAL_BASELINE"])
                         if os.environ.get("EVAL_BASELINE") else None,
                         help="the result to gate against (default <out-dir>/baseline.json)")
+    parser.add_argument("--rebase", action="store_true",
+                        default=os.environ.get("EVAL_REBASE", "") == "1",
+                        help="the golden set changed on purpose: gate on the absolute rules "
+                             "only, and a pass becomes the new baseline")
     parser.add_argument("--save-baseline", action="store_true",
                         default=os.environ.get("EVAL_SAVE_BASELINE", "") == "1",
                         help="if the gate passes (or is not applied), make this the baseline")
@@ -559,13 +582,24 @@ def main(argv: list[str] | None = None) -> int:
         golden = golden[: args.limit]
 
     suite = Suite(args, settings)
+    served = suite.served_collection()
+    if args.collection and served and served != args.collection:
+        print(f"the api at {args.api} serves {served}, not {args.collection}: the e2e answers "
+              f"and the component level would measure different collections", flush=True)
+        return 2
+    if served and not args.collection:
+        suite.use_collection(served)
+    elif not served:
+        print(f"the api at {args.api} does not say which collection it serves; using "
+              f"{args.collection or 'the rahbar-active pointer'}", flush=True)
     collection, _ = suite.collection()
     print(f"suite {args.label}: {len(golden)} questions, levels {levels}, {args.runs} run(s), "
           f"collection {collection}, api {args.api}", flush=True)
     runs = [suite.run(golden, i + 1, levels) for i in range(args.runs)]
     result: dict[str, Any] = {
         "meta": {"label": args.label, "timestamp": args.stamp, "git": git_sha(),
-                 "collection": collection, "embed_model": settings.embed_model,
+                 "collection": collection, "api_collection": served,
+                 "embed_model": settings.embed_model,
                  "llm_model": settings.llm_model, "temperature": settings.temperature,
                  "llm_seed": settings.llm_seed, "top_k": settings.top_k,
                  "max_context_passages": settings.max_context_passages,
@@ -589,7 +623,8 @@ def main(argv: list[str] | None = None) -> int:
 
         baseline = (json.loads(baseline_path.read_text(encoding="utf-8"))
                     if baseline_path.exists() else None)
-        passed, rows = evaluate(load_config(DEFAULT_CONFIG), result, baseline)
+        passed, rows = evaluate(load_config(DEFAULT_CONFIG), result, baseline,
+                                rebase=args.rebase)
         text = render(rows, passed, label(result, "candidate"), label(baseline, "baseline"))
         result["gate"] = {"passed": passed, "rows": rows, "config": DEFAULT_CONFIG,
                           "baseline": str(baseline_path) if baseline else None, "text": text}
