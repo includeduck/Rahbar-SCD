@@ -105,3 +105,11 @@ def test_exit_code_and_outputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert coverage.main(base + ["--label", "ok", "--min-share", "0.5"]) == 0
     written = sorted(p.suffix for p in (tmp_path / "out").iterdir())
     assert written.count(".json") == 2 and written.count(".md") == 2
+
+
+def test_an_override_golden_set_is_used_only_when_it_exists(tmp_path: Path) -> None:
+    override = tmp_path / "golden.jsonl"
+    assert coverage.golden_path(str(override)) == coverage.HERE / "golden.jsonl"   # absent
+    assert coverage.golden_path("") == coverage.HERE / "golden.jsonl"
+    override.write_text("{}\n", encoding="utf-8")
+    assert coverage.golden_path(str(override)) == override

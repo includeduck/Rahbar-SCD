@@ -9,8 +9,15 @@
 #   kubectl -n rahbar logs -f job/coverage-check      # ends with COVERAGE OK or COVERAGE GAP
 #   kubectl -n rahbar get job coverage-check          # Complete, or Failed on a coverage gap
 #
-# The golden set is the one in the eval image, so after adding golden questions rebuild it
-# (make eval-image) and set COVERAGE_LABEL to tell the runs apart.
+# The golden set is the one in the eval image, unless a ConfigMap coverage-golden exists: then
+# its golden.jsonl is measured instead, so another golden set (an older one, or one you are
+# about to commit) is checked without a new image. Before and after adding questions (E4):
+#
+#   git show cd52253:eval/golden.jsonl > /tmp/golden-30.jsonl            # the 30 questions
+#   kubectl -n rahbar create configmap coverage-golden --from-file=golden.jsonl=/tmp/golden-30.jsonl
+#   (run the Job)                                                       # COVERAGE GAP, Failed
+#   kubectl -n rahbar delete configmap coverage-golden
+#   (run the Job again)                                                 # the image's 43: OK
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -50,7 +57,8 @@ spec:
             - configMapRef:
                 name: rahbar-config
           env:
-            - {name: COVERAGE_LABEL, value: "before"}
+            - {name: COVERAGE_LABEL, value: "live"}
+            - {name: COVERAGE_GOLDEN, value: "/golden/golden.jsonl"}   # used only if it exists
           resources:
             requests: {cpu: 10m, memory: 64Mi}      # measured: 34 MiB peak, 8 s
             limits: {cpu: 500m, memory: 256Mi}
@@ -58,6 +66,7 @@ spec:
             - {name: traces, mountPath: /traces, readOnly: true}
             - {name: results, mountPath: /results}
             - {name: gate, mountPath: /config, readOnly: true}
+            - {name: golden, mountPath: /golden, readOnly: true}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -73,3 +82,7 @@ spec:
         - name: gate
           configMap:
             name: rahbar-gate
+        - name: golden
+          configMap:
+            name: coverage-golden
+            optional: true            # absent: the image's eval/golden.jsonl

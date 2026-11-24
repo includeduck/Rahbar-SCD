@@ -101,6 +101,15 @@ def annotate(queries: list[dict[str, Any]], notes_path: Path | None) -> None:
 
 # -- the measure -------------------------------------------------------------------------
 
+def golden_path(override: str) -> Path:
+    """The golden set to measure: an override file when it exists (in the cluster, the
+    ConfigMap coverage-golden, to check another golden set without a new image), else the
+    one in the repository or image."""
+    if override and Path(override).is_file():
+        return Path(override)
+    return HERE / "golden.jsonl"
+
+
 def cosine(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
     na, nb = math.sqrt(sum(x * x for x in a)), math.sqrt(sum(y * y for y in b))
@@ -185,7 +194,8 @@ def measure(queries: list[dict[str, Any]], golden: list[dict[str, Any]],
 
 def report(res: dict[str, Any]) -> str:
     rows = res["rows"]
-    out = [f"Coverage of {res['queries']} live queries by {res['golden_questions']} golden "
+    out = [f"golden set: {res['golden_file']}",
+           f"Coverage of {res['queries']} live queries by {res['golden_questions']} golden "
            f"questions (similarity >= {res['similarity']}): {res['covered']} covered, share "
            f"{res['share']:.1%} (need {res['min_share']:.0%})", ""]
     out.append("| domain | queries | covered | share |")
@@ -244,7 +254,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--until", default="", help="only traces before this UTC time (ISO)")
     ap.add_argument("--notes", type=Path, default=HERE / "live_queries.jsonl",
                     help="author's domain and topic per query, shown as a check")
-    ap.add_argument("--golden", type=Path, default=HERE / "golden.jsonl")
+    ap.add_argument("--golden", type=Path, default=None,
+                    help="default: $COVERAGE_GOLDEN if that file exists (the Job mounts the "
+                         "optional ConfigMap coverage-golden there), else eval/golden.jsonl")
     ap.add_argument("--config", default=DEFAULT_CONFIG, help="the gate ConfigMap or gate.yaml")
     ap.add_argument("--similarity", type=float, help="override the config's threshold")
     ap.add_argument("--min-share", type=float, help="override the config's share")
@@ -272,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
     if not queries:
         print(f"no queries found in {source}", file=sys.stderr)
         return 2
+    args.golden = args.golden or golden_path(os.environ.get("COVERAGE_GOLDEN", ""))
     golden = load_jsonl(args.golden)
 
     with httpx.Client(base_url=args.ollama.rstrip("/"), timeout=300) as client:
