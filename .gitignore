@@ -36,3 +36,5 @@ htmlcov/
 
 # VSCODE files
 .vscode/
+# Assignment 03 report: rebuilt by report/build_report.py
+report/build/
