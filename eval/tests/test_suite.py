@@ -189,3 +189,26 @@ def test_the_suite_reads_the_served_collection_from_readyz(check: str, name: str
     suite = Suite.__new__(Suite)                                # no cluster: only the api client
     suite.api = httpx.Client(transport=httpx.MockTransport(handler), base_url="http://api")
     assert suite.served_collection() == name
+
+
+def test_rewriting_the_summary_keeps_the_gate_section(tmp_path: Path) -> None:
+    from eval.agreement import main as agreement_main
+    from eval.suite import summary_markdown
+
+    run = {"e2e": {"faithfulness": 1.0, "per_question": [
+        {"id": "q01", "answer": "2.00", "judge": {"supported": True, "reason": "r"}}]}}
+    result = {"meta": {"label": "x", "timestamp": "t", "git": "g", "collection": "c",
+                       "embed_model": "m", "llm_model": "l", "temperature": 0.1,
+                       "llm_seed": 42, "judge_model": "j", "seed": 42},
+              "golden": {"total": 1, "answerable": 1, "unanswerable": 0, "hard": 0,
+                         "human": 1, "synthetic": 0, "synthetic_reviewed": 0},
+              "runs": [run], "gate": {"text": "GATE PASSED: release"}}
+    path = tmp_path / "suite-x.json"
+    path.write_text(json.dumps(result), encoding="utf-8")
+    assert "GATE PASSED" in summary_markdown(result, "suite-x")
+    labels = tmp_path / "labels.jsonl"
+    labels.write_text(json.dumps({"id": "q01", "answer": "2.00", "supported": True}) + "\n",
+                      encoding="utf-8")
+    assert agreement_main([str(path), "--labels", str(labels)]) == 0
+    md = path.with_suffix(".md").read_text(encoding="utf-8")
+    assert "GATE PASSED" in md and "Judge vs hand labels" in md

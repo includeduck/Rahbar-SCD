@@ -82,10 +82,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     result["judge_agreement"] = found
     args.result.write_text(json.dumps(result, indent=1, ensure_ascii=False), encoding="utf-8")
-    from eval.suite import summary_table
+    from eval.suite import summary_markdown
 
-    args.result.with_suffix(".md").write_text(
-        f"# {args.result.stem}\n\n{summary_table(result)}", encoding="utf-8")
+    args.result.with_suffix(".md").write_text(summary_markdown(result, args.result.stem),
+                                              encoding="utf-8")
     print(f"judge vs hand labels: {found['agree']} of {found['labelled']} agree "
           f"({found['rate']:.0%}), Cohen's kappa {found['cohen_kappa']}")
     print(f"  both supported {found['both_supported']}, both unsupported "

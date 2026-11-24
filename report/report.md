@@ -30,7 +30,7 @@ Every stage of the paper's Figure 3 has code and a Kubernetes object behind it. 
 | Verify | Four checks per document, each pass or fail with a reason: quality, completeness, recency, uniqueness (exact SHA-256 and near-duplicate by embedding). A failure quarantines the document, except recency alone, which archives it | `indexer/pipeline/verify.py`; thresholds in `docs/evidence/verification-thresholds.txt` | The paper's consistency check (contradictions between documents), and an injection scan at ingest (it runs only at retrieval) |
 | Update data lake | `lake/` holds current versions, `archive/` superseded ones, `quarantine/` failures with a `.reason.json`; a ledger records each document's hash, version and chunks; versions can be pinned and restored | `indexer/pipeline/lake.py`; PVC `corpus-data` | No retention policy for archived versions |
 | Update retrieval sources | Incremental: unchanged documents embed 0 chunks, changed ones replace only their own chunks, deleted ones leave no orphans; superseded versions stay indexed but are filtered out; one collection per configuration (`rahbar-<model>-c<size>o<overlap>`) | `indexer/pipeline/incremental.py`; StatefulSet `chroma` | A changed document's chunks are deleted, then added, so it is briefly missing during a re-embed |
-| Offline testing | Module, component and end-to-end suite, two seeded runs, 43-question golden set; release gate on thresholds in a ConfigMap | `eval/suite.py`, `eval/gate.py`, `eval/golden.jsonl`; Job `eval-suite`, ConfigMap `rahbar-gate` | The judge is the same 3B model that generates; its agreement with hand labels is still being measured |
+| Offline testing | Module, component and end-to-end suite, two seeded runs, 43-question golden set; release gate on thresholds in a ConfigMap | `eval/suite.py`, `eval/gate.py`, `eval/golden.jsonl`; Job `eval-suite`, ConfigMap `rahbar-gate` | The judge is the same 3B model that generates; it agrees with hand labels on 16 of 20 answers (kappa 0.47) |
 | Live testing | A trace per request (query, retrieved chunks with versions, prompt hash, model, rails, latency), on stdout and a volume; injection rails on input, retrieval and output; Prometheus metrics | `api/app/services/tracing.py`, `guardrails.py`, `app/trace_tool.py`, `trace_summary.py`; PVC `traces` | No live quality signal (no user feedback or online judge); no alerting on the metrics |
 | Check coverage | Nearest golden question per live query; share covered at similarity 0.70; uncovered queries grouped into topics; fails below 85% | `eval/coverage.py`; Jobs `live-traffic`, `coverage-check` | Runs on demand, not on a schedule; similarity measures wording, not whether the golden question has the same answer |
 
@@ -86,7 +86,7 @@ Retrieval and the module level are deterministic. Of 30 answers, one (q09) chang
 | End to end | Citation validity / answer accuracy / injection resistance | 1.0 / 0.45 / 1.0 | the same |
 | End to end | Latency p50 / p95 | 21.1 s / 64.0 s | 13.9 s / 23.8 s |
 
-The golden set had 30 questions: 16 answerable, 6 unanswerable, 8 hard. 18 were written by hand by the group; 12 are synthetic, and Wasay reviewed 8 of them. Latency varies with host load, not with the seed. Judge agreement with hand labels: being measured.
+The golden set had 30 questions: 16 answerable, 6 unanswerable, 8 hard. 18 were written by hand by the group; 12 are synthetic, and Wasay reviewed 8 of them. Latency varies with host load, not with the seed. **Judge against hand labels:** Wasay labelled 20 answers from the 43-question run (`eval/judge_labels.jsonl`). The judge agreed on 16 (80%), Cohen's kappa 0.47 (moderate). In 3 of the 4 disagreements the judge called a supported answer unsupported, so its faithfulness errs low.
 
 ### C. Change experiment and release gate
 
@@ -254,7 +254,7 @@ Faithfulness from the LLM judge:
 - one changed answer moves the score by 0.064;
 - it depends on getting the right evidence, which nothing in its output reveals. When the suite fetched passages from the wrong collection, it called correct answers unsupported and the score fell to 0.45 (Part E).
 
-We keep it with a hand-label check (`eval/agreement.py`, Cohen's kappa) and read it beside recall and answer accuracy, never alone.
+Against 20 hand labels it agreed on 16 (kappa 0.47), and three of its four misses were correct answers it called unsupported (q03 quotes clause 5.6 word for word). We keep it, checked by `eval/agreement.py`, and read it beside recall and answer accuracy, never alone.
 
 **(e) The hardest idea to apply.**
 

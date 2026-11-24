@@ -5587,7 +5587,36 @@
   "judge_verdicts_changed": [],
   "retrieval_rankings_changed": []
  },
- "judge_agreement": null,
+ "judge_agreement": {
+  "labels_file": "/mnt/c/Projects/Projects/Rahbar/eval/judge_labels.jsonl",
+  "labels": 20,
+  "labelled": 12,
+  "agree": 10,
+  "rate": 0.8333,
+  "both_supported": 9,
+  "both_unsupported": 1,
+  "human_yes_judge_no": 1,
+  "human_no_judge_yes": 1,
+  "cohen_kappa": 0.4,
+  "disagreements": [
+   {
+    "run": 1,
+    "id": "q03",
+    "human": true,
+    "judge": false,
+    "judge_reason": "The answer is not supported because the evidence does not specify what happens if a student remains on academic warning for multiple consecutive semesters.",
+    "by": "Wasay"
+   },
+   {
+    "run": 1,
+    "id": "q05",
+    "human": false,
+    "judge": true,
+    "judge_reason": "The answer is supported because the evidence states that a student will be allowed to repeat a maximum of 2 courses, and it does not specify the number of times a failed course can be repeated.",
+    "by": "Wasay"
+   }
+  ]
+ },
  "gate": {
   "passed": true,
   "rows": [

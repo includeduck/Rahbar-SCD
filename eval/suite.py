@@ -516,14 +516,18 @@ def git_sha() -> str:
         return "-"
 
 
+def summary_markdown(result: dict[str, Any], name: str) -> str:
+    """The .md next to a result: the summary table, then the gate's decision if it ran.
+    eval/agreement.py rewrites it with this too, so the gate section is never lost."""
+    gate = result.get("gate", {}).get("text")
+    return f"# {name}\n\n{summary_table(result)}" + (f"\n```\n{gate}\n```\n" if gate else "")
+
+
 def write_outputs(result: dict[str, Any], out_dir: Path, name: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{name}.json"
     path.write_text(json.dumps(result, indent=1, ensure_ascii=False), encoding="utf-8")
-    gate = result.get("gate", {}).get("text")
-    (out_dir / f"{name}.md").write_text(
-        f"# {name}\n\n{summary_table(result)}" + (f"\n```\n{gate}\n```\n" if gate else ""),
-        encoding="utf-8")
+    (out_dir / f"{name}.md").write_text(summary_markdown(result, name), encoding="utf-8")
     first = result["runs"][0].get("e2e")
     if first:
         golden = {q["id"]: q for q in result["golden_questions"]}

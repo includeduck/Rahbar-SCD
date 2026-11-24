@@ -30,6 +30,7 @@
 - Suite `baseline` at 20261124T175449Z (git 2fd9461), collection `rahbar-nomic-embed-text-c250o50`, embedding `nomic-embed-text`, generation `llama3.2:3b` (temperature 0.1, seed 42), judge `llama3.2:3b`, suite seed 42.
 - Golden set: 43 questions, 22 answerable, 10 unanswerable, 11 hard; 18 human, 25 synthetic (22 reviewed by hand).
 - Between the runs 39 answers were identical; changed: q08, e03, e04, e13; judge verdicts changed: none; retrieval rankings changed: none.
+- Judge vs hand labels: 16 of 20 agree (0.8).
 
 ```
 release gate: baseline (rahbar-nomic-embed-text-c250o50) against baseline (rahbar-nomic-embed-text-c400o50)

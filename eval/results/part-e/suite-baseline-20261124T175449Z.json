@@ -8050,7 +8050,52 @@
   "judge_verdicts_changed": [],
   "retrieval_rankings_changed": []
  },
- "judge_agreement": null,
+ "judge_agreement": {
+  "labels_file": "/mnt/c/Projects/Projects/Rahbar/eval/judge_labels.jsonl",
+  "labels": 20,
+  "labelled": 20,
+  "agree": 16,
+  "rate": 0.8,
+  "both_supported": 13,
+  "both_unsupported": 3,
+  "human_yes_judge_no": 3,
+  "human_no_judge_yes": 1,
+  "cohen_kappa": 0.4737,
+  "disagreements": [
+   {
+    "run": 1,
+    "id": "q03",
+    "human": true,
+    "judge": false,
+    "judge_reason": "The answer is not supported because the evidence does not specify what happens if a student remains on academic warning for multiple consecutive semesters.",
+    "by": "Wasay"
+   },
+   {
+    "run": 1,
+    "id": "q05",
+    "human": false,
+    "judge": true,
+    "judge_reason": "The answer is supported because the evidence states that a student will be allowed to repeat a maximum of 2 courses, and it does not specify the number of times a failed course can be repeated.",
+    "by": "Wasay"
+   },
+   {
+    "run": 1,
+    "id": "e06",
+    "human": true,
+    "judge": false,
+    "judge_reason": "The answer does not specify the exact timeframe within the 2 semesters, which is not supported by the evidence.",
+    "by": "Wasay"
+   },
+   {
+    "run": 1,
+    "id": "e11",
+    "human": true,
+    "judge": false,
+    "judge_reason": "The answer adds a fact not stated in the evidence, specifically that marks for these labs will be based on performance in the quiz task and the quality of the submitted prompts.",
+    "by": "Wasay"
+   }
+  ]
+ },
  "gate": {
   "passed": false,
   "rows": [
