@@ -107,3 +107,20 @@ def test_rules_need_a_known_kind(rule: dict) -> None:
     assert passed
     with pytest.raises(SystemExit):
         evaluate({"rules": [{"metric": "e2e.faithfulness", "above": 1}]}, result(), result())
+
+
+def test_compare_lists_every_level_and_the_questions_that_moved() -> None:
+    from eval.compare import compare
+
+    def res(label: str, recall: float, answered: bool) -> dict:
+        r = result(recall5=recall)
+        r["meta"] = {"label": label, "collection": label, "runs": 2}
+        r["runs"][0]["component"]["per_question"] = [{"id": "q01", "recall@5": recall}]
+        r["runs"][0]["e2e"]["per_question"] = [{"id": "q01", "answered": answered,
+                                                "expect_ok": answered}]
+        return r
+
+    text = compare(res("base", 1.0, False), res("cand", 0.0, True))
+    assert "| component | recall@5 | 1 | 0 | -1 |" in text
+    assert "| e2e | latency p95 (s) | 40 | 40 | 0 |" in text          # the worst run
+    assert "q01 recall@5 1 -> 0" in text and "q01 abstained -> answered" in text

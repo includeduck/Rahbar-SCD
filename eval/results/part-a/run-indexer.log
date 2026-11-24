@@ -1,0 +1,17 @@
+{"ts": "2026-11-21T13:33:44Z", "logger": "rahbar.indexer", "msg": "indexer starting", "dummy": false, "embed_model": "nomic-embed-text", "collection": "rahbar", "chroma": "chroma:8000", "pod": "indexer-6rqcx"}
+batch  document                                       quality      completeness recency      uniqueness   decision
+A      academic-rules-handbook-jun-2026.pdf           pass         pass         pass         pass         accept
+A      annual-report-2019-20.pdf                      pass         pass         FAIL         pass         archive
+        recency: newer version 2023-24 (annual-report-2023-24) in family annual-report
+A      annual-report-2023-24.pdf                      pass         pass         pass         pass         accept
+A      faculty-entrepreneurship-and-technical-start-u pass         pass         pass         pass         accept
+A      fee-structure-page.html                        pass         pass         pass         pass         accept
+A      grading-page.html                              pass         pass         pass         pass         accept
+A      prospectus-2026-academic-rules-and-regulations pass         pass         pass         pass         accept
+A      student-handbook-jun-2026.pdf                  pass         pass         pass         pass         accept
+A      undergraduate-academic-rules-aug-2023.pdf      pass         pass         FAIL         pass         archive
+        recency: newer version 2026-06 (academic-rules-handbook-jun-2026) in family academic-rules
+
+ingestion run 20261121T133344Z into rahbar-nomic-embed-text-c400o50: 678 chunks embedded, 0 reused, 0 deleted; documents: added 9, replaced 0, unchanged 0, archived 2, restored 0, quarantined 0, deleted 0
+{"ts": "2026-11-21T13:47:56Z", "logger": "rahbar.indexer", "msg": "ingestion finished", "collection": "rahbar-nomic-embed-text-c400o50", "embedded_chunks": 678, "reused_chunks": 0, "deleted_chunks": 0, "added": 9, "replaced": 0, "unchanged": 0, "archived": 2, "restored": 0, "quarantined": 0, "deleted": 0, "fingerprints_embedded": 9, "verify_report": "/corpus/reports/verify-20261121T133344Z.json", "ingest_report": "/corpus/reports/ingest-20261121T133344Z.json"}
+{"ts": "2026-11-21T13:47:56Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 678, "seconds": 852.7}

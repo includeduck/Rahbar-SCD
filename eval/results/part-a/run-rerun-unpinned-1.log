@@ -1,0 +1,21 @@
+{"ts": "2026-11-21T13:59:17Z", "logger": "rahbar.indexer", "msg": "indexer starting", "dummy": false, "embed_model": "nomic-embed-text", "collection": "rahbar", "chroma": "chroma:8000", "pod": "rerun-unpinned-1-9z8pk"}
+batch  document                                       quality      completeness recency      uniqueness   decision
+A      academic-rules-handbook-jun-2026.pdf           pass         pass         pass         pass         accept
+A      annual-report-2019-20.pdf                      pass         pass         FAIL         pass         archive
+        recency: newer version 2023-24 (annual-report-2023-24) in family annual-report
+A      annual-report-2023-24.pdf                      pass         pass         pass         pass         accept
+A      faculty-entrepreneurship-and-technical-start-u pass         pass         pass         pass         accept
+A      fee-structure-page.html                        pass         pass         FAIL         pass         archive
+        recency: newer version 2027-28 (fee-structure-2027-28-revision) in family fee-structure-page
+A      grading-page.html                              pass         pass         pass         pass         accept
+A      prospectus-2026-academic-rules-and-regulations pass         pass         pass         pass         accept
+A      student-handbook-jun-2026.pdf                  pass         pass         pass         pass         accept
+A      undergraduate-academic-rules-aug-2023.pdf      pass         pass         FAIL         pass         archive
+        recency: newer version 2026-06 (academic-rules-handbook-jun-2026) in family academic-rules
+batch-b exam-hall-rules.md                             pass         pass         pass         pass         accept
+batch-b fee-structure-2027-28.md                       pass         pass         pass         pass         accept
+batch-b library-services-guide.md                      pass         pass         pass         pass         accept
+
+ingestion run 20261121T135918Z into rahbar-nomic-embed-text-c400o50: 0 chunks embedded, 699 reused, 0 deleted; documents: added 0, replaced 0, unchanged 10, archived 1, restored 1, quarantined 0, deleted 0
+{"ts": "2026-11-21T14:01:02Z", "logger": "rahbar.indexer", "msg": "ingestion finished", "collection": "rahbar-nomic-embed-text-c400o50", "embedded_chunks": 0, "reused_chunks": 699, "deleted_chunks": 0, "added": 0, "replaced": 0, "unchanged": 10, "archived": 1, "restored": 1, "quarantined": 0, "deleted": 0, "fingerprints_embedded": 0, "verify_report": "/corpus/reports/verify-20261121T135918Z.json", "ingest_report": "/corpus/reports/ingest-20261121T135918Z.json"}
+{"ts": "2026-11-21T14:01:02Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 699, "seconds": 104.6}

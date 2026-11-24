@@ -1,0 +1,22 @@
+{"ts": "2026-11-24T10:41:46Z", "logger": "rahbar.indexer", "msg": "indexer starting", "mode": "incremental", "embed_model": "nomic-embed-text", "collection": "rahbar-nomic-embed-text-c250o50", "chroma": "chroma:8000", "pod": "ingest-candidate-wqwwd"}
+batch    document                                       quality      completeness recency      uniqueness   decision
+A        academic-rules-handbook-jun-2026.pdf           pass         pass         pass         pass         accept
+A        annual-report-2019-20.pdf                      pass         pass         FAIL         pass         archive
+          recency: newer version 2023-24 (annual-report-2023-24) in family annual-report
+A        annual-report-2023-24.pdf                      pass         pass         pass         pass         accept
+A        faculty-entrepreneurship-and-technical-start-u pass         pass         pass         pass         accept
+A        fee-structure-page.html                        pass         pass         FAIL         pass         archive
+          recency: newer version 2027-28 (fee-structure-2027-28-revision) in family fee-structure-page
+A        grading-page.html                              pass         pass         pass         pass         accept
+A        prospectus-2026-academic-rules-and-regulations pass         pass         pass         pass         accept
+A        student-handbook-jun-2026.pdf                  pass         pass         pass         pass         accept
+A        undergraduate-academic-rules-aug-2023.pdf      pass         pass         FAIL         pass         archive
+          recency: newer version 2026-06 (academic-rules-handbook-jun-2026) in family academic-rules
+batch-b  course-withdrawal-faq.md                       pass         pass         pass         pass         accept
+batch-b  exam-hall-rules.md                             pass         pass         pass         pass         accept
+batch-b  fee-structure-2027-28.md                       pass         pass         pass         pass         accept
+batch-b  library-services-guide.md                      pass         pass         pass         pass         accept
+
+ingestion run 20261124T104146Z into rahbar-nomic-embed-text-c250o50: 885 chunks embedded, 0 reused, 0 deleted; documents: added 13, replaced 0, unchanged 0, archived 3, restored 0, quarantined 0, deleted 0
+{"ts": "2026-11-24T10:49:38Z", "logger": "rahbar.indexer", "msg": "ingestion finished", "collection": "rahbar-nomic-embed-text-c250o50", "embedded_chunks": 885, "reused_chunks": 0, "deleted_chunks": 0, "added": 13, "replaced": 0, "unchanged": 0, "archived": 3, "restored": 0, "quarantined": 0, "deleted": 0, "fingerprints_embedded": 13, "verify_report": "/corpus/candidates/c250o50/reports/verify-20261124T104146Z.json", "ingest_report": "/corpus/candidates/c250o50/reports/ingest-20261124T104146Z.json"}
+{"ts": "2026-11-24T10:49:38Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 885, "seconds": 472.0}
