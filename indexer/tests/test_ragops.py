@@ -299,3 +299,18 @@ def test_a_candidate_ingestion_builds_its_own_collection_and_leaves_live_alone(
     h.embedded.clear()
     run_pipeline(h.settings)
     assert h.chunk_embeds() == 1                      # only the dimension probe
+
+
+def test_the_ci_fixture_editions_are_one_family() -> None:
+    """eval/fixtures holds two editions of the same rules, 0.98 similar. The near-duplicate
+    check compares documents of different families, so the editions must declare one
+    family: without it the e2e-eval job quarantined the current 2026 edition as a duplicate
+    of the 2023 one (PR 15's first CI run)."""
+    from pipeline.lake import discover_sources
+
+    fixtures = Path(__file__).resolve().parents[2] / "eval" / "fixtures"
+    docs = {d.doc_id: d for d in discover_sources(fixtures)}
+    old, new = docs["academic-rules-2023"], docs["academic-rules-2026"]
+    assert old.family == new.family == "academic-rules"
+    assert old.superseded_declared and not new.superseded_declared
+    assert docs["fees-2026"].family != new.family
