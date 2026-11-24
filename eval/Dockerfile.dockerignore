@@ -6,6 +6,7 @@
 !eval/__init__.py
 !eval/*.py
 !eval/golden.jsonl
+!eval/live_queries.jsonl
 !eval/embedding_pairs.json
 !eval/judge_labels.jsonl
 !eval/gate.yaml

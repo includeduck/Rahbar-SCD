@@ -102,7 +102,7 @@ def test_every_golden_question_is_well_formed() -> None:
             for rel in q["relevant"]:     # ground truth: document and page
                 assert rel["source"] and rel["section"] and isinstance(rel["page"], int)
         if q["category"] == "hard":
-            assert q["hard"] in ("paraphrase", "multi-chunk", "batch-b"), q["id"]
+            assert q["hard"] in ("paraphrase", "multi-chunk", "batch-b", "conflict"), q["id"]
 
 
 # ---------------------------------------------------------------------------
