@@ -107,3 +107,17 @@ gains are small (each is one question of 24, and faithfulness +0.045 is inside t
 baseline moves between runs), so the case for releasing is "as good, and cheaper per
 answer", not a large quality jump. The typo and distractor results are the risk to watch
 after release, in the trace summary's top-1 similarity and abstention rate.
+
+## The release and a rollback (F3), 24 Nov 2026
+
+Screenshots: `report/screenshots/F3-*.png`.
+
+| step | command | result |
+|---|---|---|
+| release | `kubectl -n rahbar set env deployment/api RETRIEVAL_COLLECTION=rahbar-nomic-embed-text-c250o50` | rolling update, `successfully rolled out` |
+| bad release (gate skipped) | `... RETRIEVAL_COLLECTION=rahbar-g1795268618` | rolled out: the api accepts the stale index, which is why the gate has to stop it first |
+| undo | `kubectl -n rahbar rollout undo deployment/api` | back to the c250o50 revision (rollout history: revision 22 becomes 24) |
+| check | `/api/ask` with `X-Request-ID: after-undo-1`, then `python -m app.trace_tool after-undo-1` | answered "at least 15 minutes before the paper starts"; the trace names `rahbar-nomic-embed-text-c250o50` (885 chunks) and `nomic-embed-text @ 0a109f422b47` |
+
+The release is recorded in `k8s/base/api-release.yaml`, so a later `kubectl apply -k` keeps
+c250o50 instead of rolling the live api back to c400o50.

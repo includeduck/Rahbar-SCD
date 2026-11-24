@@ -73,12 +73,22 @@ Then record the release in `k8s/base/api-release.yaml`, so the next `kubectl app
 
 ## 5. Roll back
 
+The demo: a bad release that skips the gate (the stale A02 index), then the undo.
+
 ```bash
+kubectl -n rahbar set env deployment/api RETRIEVAL_COLLECTION=rahbar-g1795268618
+kubectl -n rahbar rollout status deployment/api
 kubectl -n rahbar rollout undo deployment/api
 kubectl -n rahbar rollout status deployment/api
-kubectl -n rahbar exec -i deploy/api -- python - --suffix -after-undo < eval/trace_queries.py
-kubectl -n rahbar exec deploy/api -- python -m app.trace_tool d04-warning-cgpa-after-undo
+kubectl -n rahbar exec deploy/api -- python -c "import httpx; print(httpx.post('http://localhost:8000/api/ask', json={'question': 'How early must students reach the examination hall?'}, headers={'X-Request-ID': 'after-undo-1', 'Cache-Control': 'no-cache'}, timeout=300).json()['answer'])"
+kubectl -n rahbar exec deploy/api -- python -m app.trace_tool after-undo-1 | head -8
 ```
 
-The new trace names the previous collection (`rahbar-nomic-embed-text-c400o50`) and the
-embedding model's version (its Ollama digest).
+`rollout undo` returns to the revision before the bad one, so the new trace names the
+collection that was live before it (`rahbar-nomic-embed-text-c250o50` after the release in
+step 4) and the embedding model's version (its Ollama digest). `Cache-Control: no-cache`
+makes the request go through retrieval instead of the semantic cache.
+
+`rollout undo` does not update the `last-applied-configuration` annotation (kubectl warns
+about this), so `k8s/base/api-release.yaml` must name the collection that should be live:
+the next `kubectl apply -k` sets it from that file.
