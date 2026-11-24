@@ -1,0 +1,42 @@
+{"id": "l01", "query": "what gpa do i need so i don't get put on probation", "domain": "in", "topic": "academic warning"}
+{"id": "l02", "query": "How many classes can I miss before I'm not allowed to sit the final?", "domain": "in", "topic": "attendance"}
+{"id": "l03", "query": "Can my HOD excuse my absences if I was sick for two weeks?", "domain": "in", "topic": "attendance"}
+{"id": "l04", "query": "I failed Data Structures. When do I have to take it again?", "domain": "in", "topic": "repeating courses"}
+{"id": "l05", "query": "how many times am i allowed to repeat a course i failed", "domain": "in", "topic": "repeating courses"}
+{"id": "l06", "query": "What is an A- worth in grade points?", "domain": "in", "topic": "grading"}
+{"id": "l07", "query": "Do I get any fee back if I drop a course in the third week?", "domain": "in", "topic": "fees and refunds"}
+{"id": "l08", "query": "Am I allowed to use ChatGPT for my assignments?", "domain": "in", "topic": "generative AI policy"}
+{"id": "l09", "query": "Can I take 6 courses this semester?", "domain": "in", "topic": "course load"}
+{"id": "l10", "query": "What's the per credit hour fee for BS this year?", "domain": "in", "topic": "fees and refunds"}
+{"id": "l11", "query": "What time should I be at the exam hall?", "domain": "in", "topic": "exam hall rules"}
+{"id": "l12", "query": "Last date to withdraw from a course?", "domain": "in", "topic": "course withdrawal"}
+{"id": "l13", "query": "If I withdraw from a course will it show W on my transcript?", "domain": "in", "topic": "course withdrawal"}
+{"id": "l14", "query": "What happens if I stay on warning for two semesters in a row?", "domain": "in", "topic": "academic warning"}
+{"id": "l15", "query": "Can I transfer my FYP credits from my previous university?", "domain": "in", "topic": "credit transfer"}
+{"id": "l16", "query": "Is there a hostel at the Islamabad campus?", "domain": "in", "topic": "hostels"}
+{"id": "l17", "query": "What are the library opening hours during exams?", "domain": "in", "topic": "library services"}
+{"id": "l18", "query": "How many books can I borrow from the library and for how long?", "domain": "in", "topic": "library services"}
+{"id": "l19", "query": "What is the fine for returning a library book late?", "domain": "in", "topic": "library services"}
+{"id": "l20", "query": "Can I access the library's online journals from home?", "domain": "in", "topic": "library services"}
+{"id": "l21", "query": "What is the penalty for plagiarism in an assignment?", "domain": "in", "topic": "academic integrity"}
+{"id": "l22", "query": "What counts as plagiarism according to the university?", "domain": "in", "topic": "academic integrity"}
+{"id": "l23", "query": "What happens if I'm caught cheating in an exam?", "domain": "in", "topic": "academic integrity"}
+{"id": "l24", "query": "Is my thesis checked with Turnitin?", "domain": "in", "topic": "academic integrity"}
+{"id": "l25", "query": "Can I freeze my semester because of a medical problem?", "domain": "in", "topic": "semester freeze"}
+{"id": "l26", "query": "How many semesters can I freeze during my degree?", "domain": "in", "topic": "semester freeze"}
+{"id": "l27", "query": "Do I have to pay fees for a frozen semester?", "domain": "in", "topic": "semester freeze"}
+{"id": "l28", "query": "How do I resume my studies after freezing a semester?", "domain": "in", "topic": "semester freeze"}
+{"id": "l29", "query": "How do I connect my phone to the campus Wi-Fi?", "domain": "out", "topic": "campus IT services"}
+{"id": "l30", "query": "What's the student wifi password?", "domain": "out", "topic": "campus IT services"}
+{"id": "l31", "query": "Is there a limit on how much data I can download on the campus Wi-Fi?", "domain": "out", "topic": "campus IT services"}
+{"id": "l32", "query": "How do I reset my university email password?", "domain": "out", "topic": "campus IT services"}
+{"id": "l33", "query": "I can't log in to the student portal, who do I contact?", "domain": "out", "topic": "campus IT services"}
+{"id": "l34", "query": "How do I set up two-factor authentication on my student account?", "domain": "out", "topic": "campus IT services"}
+{"id": "l35", "query": "Do students get Microsoft Office free with their university email?", "domain": "out", "topic": "campus IT services"}
+{"id": "l36", "query": "How much storage do we get on our university Google Drive?", "domain": "out", "topic": "campus IT services"}
+{"id": "l37", "query": "Where can I print my assignment on campus and how much does a page cost?", "domain": "out", "topic": "campus IT services"}
+{"id": "l38", "query": "Does the university give students free GitHub Copilot or Azure credits?", "domain": "out", "topic": "campus IT services"}
+{"id": "l39", "query": "My laptop broke, does the IT department lend laptops to students?", "domain": "out", "topic": "campus IT services"}
+{"id": "l40", "query": "Which VPN do I use to reach university systems from home?", "domain": "out", "topic": "campus IT services"}
+{"id": "l41", "query": "How do I install MATLAB with the university licence?", "domain": "out", "topic": "campus IT services"}
+{"id": "l42", "query": "Is the Wi-Fi in the hostels the same network as on campus?", "domain": "out", "topic": "campus IT services"}

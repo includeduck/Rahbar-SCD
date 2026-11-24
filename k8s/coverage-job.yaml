@@ -1,0 +1,75 @@
+# Query coverage (Assignment 03, E2 and E4): eval/coverage.py reads the live queries back from
+# the api's trace log (the traces volume, read-only), finds each one's most similar golden
+# question and fails when too few are covered. The threshold and the required share are the
+# `coverage:` block of the rahbar-gate ConfigMap, mounted at /config. Results go to the
+# eval-results volume as coverage-<label>-<time>.json and .md.
+#
+#   kubectl -n rahbar delete job coverage-check --ignore-not-found
+#   kubectl apply -f k8s/coverage-job.yaml
+#   kubectl -n rahbar logs -f job/coverage-check      # ends with COVERAGE OK or COVERAGE GAP
+#   kubectl -n rahbar get job coverage-check          # Complete, or Failed on a coverage gap
+#
+# The golden set is the one in the eval image, so after adding golden questions rebuild it
+# (make eval-image) and set COVERAGE_LABEL to tell the runs apart.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coverage-check
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: eval
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: eval
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: coverage
+          image: rahbar-eval:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "eval.coverage"]
+          args: ["--log", "/traces", "--request-prefix", "live-",
+                 "--config", "/config/gate.yaml", "--out", "/results"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - {name: COVERAGE_LABEL, value: "before"}
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          volumeMounts:
+            - {name: traces, mountPath: /traces, readOnly: true}
+            - {name: results, mountPath: /results}
+            - {name: gate, mountPath: /config, readOnly: true}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: traces
+          persistentVolumeClaim:
+            claimName: traces
+            readOnly: true
+        - name: results
+          persistentVolumeClaim:
+            claimName: eval-results
+        - name: gate
+          configMap:
+            name: rahbar-gate

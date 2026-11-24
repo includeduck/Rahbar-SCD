@@ -47,3 +47,13 @@ data:
         why: the worst run counts; baseline p95 was 64 s under host load and 24 s without;
           the model call times out at 120 s, so 90 s leaves room for a slow laptop but stops
           a candidate whose prompts grow (for example bigger chunks)
+    coverage:                # eval/coverage.py (Part E): do the golden questions cover live traffic?
+      similarity: 0.70
+      min_share: 0.85
+      group_threshold: 0.55
+      why: from the module level's embedding pairs (nomic-embed-text, eval/embedding_pairs.json).
+        Paraphrase pairs score 0.64 to 0.90 (13 of 16 at or above 0.70), different questions
+        from the same university domain 0.32 to 0.46. A live query counts as covered only when
+        a golden question is about as close as a paraphrase of it, 0.24 above any unrelated
+        pair; sharing the domain is not enough. 85% is the paper's example share. Uncovered
+        queries are grouped while their mean similarity is 0.55, between the two ranges.
