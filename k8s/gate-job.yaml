@@ -1,0 +1,65 @@
+# Re-apply the release gate to saved suite results (Assignment 03, F2): the thresholds come
+# from the rahbar-gate ConfigMap, mounted at /config, so editing one and re-running this Job
+# changes the decision with the same image and the same results. Takes seconds; the full
+# suite (k8s/eval-job.yaml) applies the same gate at the end of every run.
+#
+#   kubectl -n rahbar delete job gate-check --ignore-not-found
+#   kubectl apply -f k8s/gate-job.yaml
+#   kubectl -n rahbar logs -f job/gate-check          # ends with GATE PASSED or GATE FAILED
+#
+# To judge another result file, change GATE_CANDIDATE below (a file on the eval-results volume).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gate-check
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: eval
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: eval
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: gate
+          image: rahbar-eval:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - {name: GATE_CANDIDATE, value: "suite-candidate-c250o50-20261124T111757Z.json"}
+          command: ["python", "-m", "eval.gate"]
+          args: ["--candidate", "/results/$(GATE_CANDIDATE)",
+                 "--baseline", "/results/baseline.json",
+                 "--config", "/config/gate.yaml"]
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 256Mi}
+          volumeMounts:
+            - {name: results, mountPath: /results, readOnly: true}
+            - {name: gate, mountPath: /config, readOnly: true}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: eval-results
+        - name: gate
+          configMap:
+            name: rahbar-gate

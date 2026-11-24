@@ -1,0 +1,78 @@
+# A deliberately bad candidate for the gate (Assignment 03, C2 and F3): the Assignment 02
+# generation rahbar-g1795268618, built before Batch B, served by api-candidate. It is ready
+# (same embedding model) but stale: no exam-hall rules, no withdrawal FAQ, the old fee page.
+# One run is enough: its recall drop is deterministic. The gate fails, so the Job fails and
+# the candidate is never rolled out.
+#
+#   kubectl -n rahbar set env deployment/api-candidate RETRIEVAL_COLLECTION=rahbar-g1795268618
+#   kubectl -n rahbar rollout status deployment/api-candidate
+#   kubectl -n rahbar delete job eval-candidate-stale --ignore-not-found
+#   kubectl apply -f k8s/candidate/eval-candidate-stale-job.yaml
+#   kubectl -n rahbar logs -f job/eval-candidate-stale
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eval-candidate-stale
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+    rahbar/track: candidate
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 10800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: eval
+        app.kubernetes.io/part-of: rahbar
+        rahbar/track: candidate
+    spec:
+      serviceAccountName: eval
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: eval
+          image: rahbar-eval:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "eval.suite"]
+          args: ["--runs", "1", "--seed", "42"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - {name: EVAL_API, value: "http://api-candidate:8000"}
+            - {name: EVAL_COLLECTION, value: "rahbar-g1795268618"}
+            - {name: EVAL_LABEL, value: "candidate-stale-g1795268618"}
+            - {name: EVAL_RESULTS_DIR, value: "/results"}
+            - {name: EVAL_GATE, value: "1"}
+            - {name: GATE_CONFIG, value: "/config/gate.yaml"}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: results, mountPath: /results}
+            - {name: gate, mountPath: /config, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: eval-results
+        - name: gate
+          configMap:
+            name: rahbar-gate
+        - name: tmp
+          emptyDir: {}

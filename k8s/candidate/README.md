@@ -45,9 +45,22 @@ The gate can be re-applied to saved results without re-running anything:
 
 ## 3. A threshold edit changes the outcome (F2)
 
-Edit a number in `k8s/base/gate-configmap.yaml` (for example faithfulness `min`), then
-`kubectl apply -k k8s/overlays/dev-wsl` and re-run the eval Job: same image, same results,
-a different decision.
+`k8s/gate-job.yaml` re-applies the mounted thresholds to a saved result in seconds:
+
+```bash
+kubectl -n rahbar delete job gate-check --ignore-not-found
+kubectl apply -f k8s/gate-job.yaml && kubectl -n rahbar logs -f job/gate-check     # PASSED
+# raise e2e.faithfulness min from 0.75 to 0.85 in k8s/base/gate-configmap.yaml, then
+kubectl apply -k k8s/overlays/dev-wsl
+kubectl -n rahbar delete job gate-check
+kubectl apply -f k8s/gate-job.yaml && kubectl -n rahbar logs -f job/gate-check     # FAILED
+git checkout k8s/base/gate-configmap.yaml && kubectl apply -k k8s/overlays/dev-wsl  # restore
+```
+
+Same image, same results, a different decision.
+
+The candidate stopped by the gate is `k8s/candidate/eval-candidate-stale-job.yaml`, the
+stale A02 index. Its Job fails, so it is never rolled out.
 
 ## 4. Release (only after GATE PASSED)
 
