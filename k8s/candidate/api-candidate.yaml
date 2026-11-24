@@ -64,8 +64,8 @@ spec:
             periodSeconds: 10
             failureThreshold: 3
           resources:
-            requests: {cpu: 100m, memory: 192Mi}
-            limits: {cpu: 500m, memory: 512Mi}
+            requests: {cpu: 100m, memory: 96Mi}     # as the live api (measured, api.yaml)
+            limits: {cpu: 500m, memory: 256Mi}
           volumeMounts:
             - {name: traces, mountPath: /traces}
             - {name: tmp, mountPath: /tmp}

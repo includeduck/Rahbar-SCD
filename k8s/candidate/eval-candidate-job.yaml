@@ -53,8 +53,8 @@ spec:
             - {name: EVAL_GATE, value: "1"}
             - {name: GATE_CONFIG, value: "/config/gate.yaml"}
           resources:
-            requests: {cpu: 50m, memory: 128Mi}
-            limits: {cpu: 500m, memory: 512Mi}
+            requests: {cpu: 20m, memory: 64Mi}      # as k8s/eval-job.yaml (measured)
+            limits: {cpu: 500m, memory: 256Mi}
           volumeMounts:
             - {name: results, mountPath: /results}
             - {name: gate, mountPath: /config, readOnly: true}

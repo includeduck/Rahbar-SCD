@@ -42,7 +42,7 @@ spec:
           env:
             - {name: EVAL_API, value: "http://api:8000"}
           resources:
-            requests: {cpu: 10m, memory: 64Mi}
+            requests: {cpu: 10m, memory: 64Mi}      # the burst client, 12 threads: 36 MiB peak
             limits: {cpu: 200m, memory: 256Mi}
           securityContext:
             allowPrivilegeEscalation: false

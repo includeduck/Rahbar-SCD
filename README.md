@@ -25,6 +25,30 @@ Muhammad Zain Bin Jabir.
 > (ADRs 0001–0004), engineering notes, and the `e2e-eval` CI gate are complete.
 > Progress: [`PHASES.md`](PHASES.md).
 
+## Assignment 03: RAGOps
+
+Assignment 03 adds operations around the same service: the data lake is verified and updated
+incrementally, the system is tested at three levels, changes are released through a gate,
+every answer can be traced, and coverage and drift are checked. Each part is a Kubernetes
+object you apply, and its results are committed under `eval/results/part-*/`. A fresh
+cluster: [`k8s/README.md`](k8s/README.md). Muhammad Wasay Tariq (24I-3071).
+
+| part | command (namespace `rahbar`, from the repository root) | results |
+|---|---|---|
+| A. Verify and update | `kubectl apply -f k8s/ingest-batch-b.yaml` then `kubectl -n rahbar logs -f job/ingest-batch-b -c indexer`; an unchanged re-run: `kubectl -n rahbar create job --from=cronjob/reindex rerun-unchanged` | [eval/results/part-a](eval/results/part-a/README.md) |
+| B. Three-level suite | `make eval-image && make eval-suite` (Job `eval-suite`, [k8s/eval-job.yaml](k8s/eval-job.yaml)); judge agreement: `python -m eval.agreement <result.json>` | [eval/results/part-b](eval/results/part-b/README.md) |
+| C. Change and gate | the runbook [k8s/candidate/README.md](k8s/candidate/README.md); compare: `python -m eval.compare <baseline.json> <candidate.json>`; the gate alone: `python -m eval.gate --candidate <c.json> --baseline <b.json>` | [eval/results/part-c](eval/results/part-c/README.md) |
+| D. Traces | `kubectl -n rahbar exec deploy/api -- python -m app.trace_tool <trace-id>`; `kubectl -n rahbar exec deploy/api -- python -m app.trace_summary --last 1h`; sample queries: `kubectl -n rahbar exec -i deploy/api -- python - < eval/trace_queries.py` | [eval/results/part-d](eval/results/part-d/README.md) |
+| E. Drift and coverage | `kubectl apply -f k8s/live-traffic-job.yaml`, then `kubectl apply -f k8s/coverage-job.yaml` (fails on a coverage gap); locally: `python -m eval.coverage --queries eval/live_queries.jsonl` | [eval/results/part-e](eval/results/part-e/README.md) |
+| F. Kubernetes | `kubectl apply -k k8s/overlays/dev-wsl`; threshold demo: `kubectl apply -f k8s/gate-job.yaml`; release and undo: [k8s/candidate/README.md](k8s/candidate/README.md) §4 and §5; metrics: `kubectl -n rahbar port-forward svc/api 8000:8000`; resources: `scripts/sample-resources.sh <label> [job]` | [eval/results/part-f](eval/results/part-f/README.md), [k8s/README.md](k8s/README.md) |
+
+The golden set is [`eval/golden.jsonl`](eval/golden.jsonl) (43 questions), the gate's and the
+coverage check's thresholds are the ConfigMap [`k8s/base/gate-configmap.yaml`](k8s/base/gate-configmap.yaml),
+and the screenshots for the report are in [`report/screenshots/`](report/screenshots/README.md).
+Tests: `make test` (api, indexer and eval, no cluster needed).
+
+The rest of this README describes the Assignment 02 service, which Assignment 03 builds on.
+
 ## Architecture
 
 ```mermaid

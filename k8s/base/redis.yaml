@@ -72,10 +72,12 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 20
             failureThreshold: 3
-          # Initial values; phase 11 sets them from `kubectl top pods`.
+          # Measured 24 Nov 2026 (eval/results/part-f): 15-20m CPU (43m in the burst), 9-14 MiB
+          # working set, memory.peak 43 MiB. The limit allows for a snapshot fork, which can
+          # briefly double the memory in use.
           resources:
             requests:
-              cpu: 50m
+              cpu: 25m
               memory: 64Mi
             limits:
               cpu: 250m

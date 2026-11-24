@@ -61,9 +61,11 @@ spec:
             # applies its absolute rules only, and a pass becomes the new baseline.
             - {name: EVAL_REBASE, value: "0"}
             - {name: GATE_CONFIG, value: "/config/gate.yaml"}
+          # Measured over a full 2-run suite (24 Nov 2026, eval/results/part-f): 2-13m CPU,
+          # 30-31 MiB working set, memory.peak 36 MiB. The work is in Ollama, not here.
           resources:
-            requests: {cpu: 50m, memory: 128Mi}
-            limits: {cpu: 500m, memory: 512Mi}
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
           volumeMounts:
             - {name: results, mountPath: /results}
             - {name: gate, mountPath: /config, readOnly: true}

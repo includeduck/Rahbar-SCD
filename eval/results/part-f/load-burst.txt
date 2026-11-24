@@ -1,0 +1,1 @@
+12 clients, 214 s: 535 answers (2.5/s), 0 errors; latency p50 0.78 s, p95 1.16 s, max 121.67 s

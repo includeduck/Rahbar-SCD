@@ -72,15 +72,19 @@ spec:
             preStop:
               exec:
                 command: ["sleep", "10"]
-          # Initial values; phase 11 sets them from `kubectl top pods`. requests.cpu is the
-          # HPA's denominator, so it must be set.
+          # Measured 24 Nov 2026 (eval/results/part-f): idle and under the suite 5-9m CPU, 47-52
+          # MiB working set; a 12-client burst (2.5 answers/s) 64m per pod, 54 MiB, memory.peak
+          # 76 MiB. The model runs outside the pod, so the api waits more than it computes.
+          # requests.cpu is the HPA's denominator: at its 70% target, 100m scales out above
+          # about 70m per pod, which the burst reached (66%). Memory: the peak plus a quarter;
+          # the limit leaves room for long prompts and answers.
           resources:
             requests:
               cpu: 100m
-              memory: 192Mi
+              memory: 96Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              memory: 256Mi
           volumeMounts:
             - name: tmp
               mountPath: /tmp

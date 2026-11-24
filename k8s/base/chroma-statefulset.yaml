@@ -56,11 +56,14 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 20
             failureThreshold: 3
-          # Initial values; phase 11 sets them from `kubectl top pods`.
+          # Measured 24 Nov 2026 (eval/results/part-f), four collections stored: 5-14m CPU
+          # (41m at most, under the suite), 117-159 MiB working set, memory.peak 307 MiB with
+          # the index files in page cache. The request covers that peak, so queries are served
+          # from memory; the limit leaves room for more collections (each candidate adds one).
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 50m
+              memory: 320Mi
             limits:
               cpu: "1"
               memory: 1Gi
