@@ -1,0 +1,24 @@
+# What the live api serves (Assignment 03, C3 and F3). RETRIEVAL_COLLECTION pins the api
+# Deployment to one collection, so a release is a change to this Deployment's pod template:
+# a rolling update (maxUnavailable: 0, api.yaml) that `kubectl rollout status` watches and
+# `kubectl rollout undo` reverses, after which new traces name the previous collection.
+#
+# Release a candidate that passed the gate (k8s/candidate/README.md):
+#   edit the value below, then  kubectl apply -k k8s/overlays/dev-wsl
+#   (or: kubectl -n rahbar set env deployment/api RETRIEVAL_COLLECTION=<collection>)
+#   kubectl -n rahbar rollout status deployment/api
+# Reverse it:
+#   kubectl -n rahbar rollout undo deployment/api
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: rahbar
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          env:
+            - name: RETRIEVAL_COLLECTION
+              value: rahbar-nomic-embed-text-c400o50

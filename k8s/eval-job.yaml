@@ -6,8 +6,14 @@
 #   kubectl apply -f k8s/eval-job.yaml
 #   kubectl -n rahbar logs -f job/eval-suite
 #
+# Then the release gate (eval/gate.py) compares the result with /results/baseline.json using the
+# thresholds in the rahbar-gate ConfigMap (mounted at /config): the Job fails when the gate
+# fails, and a run that passes becomes the new baseline. Edit a threshold in
+# k8s/base/gate-configmap.yaml and re-apply to change the outcome without a new image.
+#
 # Copy the result files out with the helper pod in k8s/results-shell.yaml. With llama3.2:3b on
 # a laptop CPU one end-to-end pass of 30 questions takes 10 to 20 minutes, so allow about 40.
+# The candidate's version of this Job is k8s/candidate/eval-candidate-job.yaml.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -49,11 +55,15 @@ spec:
             - {name: EVAL_API, value: "http://api:8000"}
             - {name: EVAL_LABEL, value: "baseline"}
             - {name: EVAL_RESULTS_DIR, value: "/results"}
+            - {name: EVAL_GATE, value: "1"}
+            - {name: EVAL_SAVE_BASELINE, value: "1"}
+            - {name: GATE_CONFIG, value: "/config/gate.yaml"}
           resources:
             requests: {cpu: 50m, memory: 128Mi}
             limits: {cpu: 500m, memory: 512Mi}
           volumeMounts:
             - {name: results, mountPath: /results}
+            - {name: gate, mountPath: /config, readOnly: true}
             - {name: tmp, mountPath: /tmp}
           securityContext:
             allowPrivilegeEscalation: false
@@ -63,5 +73,8 @@ spec:
         - name: results
           persistentVolumeClaim:
             claimName: eval-results
+        - name: gate
+          configMap:
+            name: rahbar-gate
         - name: tmp
           emptyDir: {}

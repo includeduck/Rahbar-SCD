@@ -101,7 +101,11 @@ class SemanticCache:
         now = time.monotonic()
         if (self._generation_id is None
                 or now - self._generation_read_at > GENERATION_TTL_SECONDS):
-            self._generation_id = _get_generation_id(self.settings)
+            # A Deployment pinned to a collection (RETRIEVAL_COLLECTION) keeps its own cache
+            # namespace: the live api and a candidate share Redis, not answers.
+            gen = _get_generation_id(self.settings)
+            pinned = self.settings.retrieval_collection
+            self._generation_id = f"{pinned}@{gen}" if pinned else gen
             self._generation_read_at = now
         return self._generation_id
 

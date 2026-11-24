@@ -1,0 +1,71 @@
+# Build the Part C candidate's collection: the same documents, chunked at 250 words with 50 of
+# overlap instead of 400/50, into rahbar-nomic-embed-text-c250o50 (the name comes from the
+# settings). The live collection is untouched:
+#   UPDATE_POINTER=false   rahbar-active keeps naming the live collection
+#   LAKE_DIR               the candidate keeps its own ledger, lake copies and reports under
+#                          /corpus/candidates/c250o50; the input documents are shared
+# Like the indexer Job, this Job is the only thing that writes the candidate's collection.
+#
+#   kubectl -n rahbar delete job ingest-candidate --ignore-not-found
+#   kubectl apply -f k8s/candidate/ingest-candidate.yaml
+#   kubectl -n rahbar logs -f job/ingest-candidate
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ingest-candidate
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+    rahbar/track: candidate
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: indexer
+        app.kubernetes.io/part-of: rahbar
+        rahbar/track: candidate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: indexer
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: indexer
+          image: rahbar-indexer:dev
+          imagePullPolicy: IfNotPresent
+          args: ["python", "-m", "pipeline.run"]
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+          env:
+            - {name: CHUNK_SIZE, value: "250"}
+            - {name: CHUNK_OVERLAP, value: "50"}
+            - {name: LAKE_DIR, value: "/corpus/candidates/c250o50"}
+            - {name: UPDATE_POINTER, value: "false"}
+          # The same sizing as the indexer Job (docs/evidence/kubectl-top-indexer.txt).
+          resources:
+            requests: {cpu: 500m, memory: 768Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          volumeMounts:
+            - {name: corpus, mountPath: /corpus}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: corpus
+          persistentVolumeClaim:
+            claimName: corpus-data
+        - name: tmp
+          emptyDir: {}

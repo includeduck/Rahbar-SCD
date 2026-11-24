@@ -159,6 +159,7 @@ def sync(verdicts: list[Verdict], ledger: Ledger, settings: IndexerSettings, cli
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 
-    from .store import _update_pointer
-    _update_pointer(client, col.name, int(time.time()))
+    if settings.update_pointer:
+        from .store import _update_pointer
+        _update_pointer(client, col.name, int(time.time()))
     return result

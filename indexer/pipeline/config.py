@@ -18,6 +18,9 @@ class IndexerSettings:
     ollama_url: str
     collection_override: str = ""   # COLLECTION_NAME: fixes the collection (Part F candidate)
     lake_dir: str = ""              # LAKE_DIR: where lake/, archive/, quarantine/, state/ go
+    # UPDATE_POINTER=false: a candidate ingestion (Part C) builds its collection without
+    # moving rahbar-active, the pointer that unpinned readers and the cache follow.
+    update_pointer: bool = True
 
 
 def get_settings() -> IndexerSettings:
@@ -32,4 +35,6 @@ def get_settings() -> IndexerSettings:
         ollama_url=os.environ.get("OLLAMA_URL", "http://host.minikube.internal:11434"),
         collection_override=os.environ.get("COLLECTION_NAME", ""),
         lake_dir=os.environ.get("LAKE_DIR") or os.environ.get("CORPUS_DIR") or "/corpus",
+        update_pointer=os.environ.get("UPDATE_POINTER", "true").lower() not in ("false", "0",
+                                                                              "no"),
     )

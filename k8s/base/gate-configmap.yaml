@@ -1,0 +1,49 @@
+# The release gate's thresholds (Assignment 03, C2 and F2). The eval Job mounts this at
+# /config/gate.yaml and eval/gate.py applies it; edit a number here and `kubectl apply -k` to
+# change the outcome without rebuilding any image. Locally, eval/gate.py reads this file too.
+#
+# Every rule compares a metric of the candidate's suite result (averaged over its runs, or the
+# worst run for latency) with a fixed bound or with the baseline's result on the same golden
+# set. The numbers and their reasons are from the Part B baseline (eval/results/part-b).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rahbar-gate
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: eval
+    app.kubernetes.io/part-of: rahbar
+data:
+  gate.yaml: |
+    aggregate: mean          # over the runs in one suite result; a rule can say max or min
+    rules:
+      - metric: component.base.recall@5
+        max_drop: 0.02
+        why: the assignment's example; retrieval is deterministic (identical in both baseline
+          runs), so any drop is a real change, and 0.02 is half of one question of 24
+      - metric: component.base.ndcg@5
+        max_drop: 0.05
+        why: ranking may move a little without losing the answer, but not by more than about
+          one question's answer falling one rank
+      - metric: e2e.faithfulness
+        min: 0.75
+        why: baseline 0.77 and 0.83 (mean 0.80); the runs differ by 0.064 from one changed
+          answer, so 0.75 allows that noise but rejects one more unsupported answer in four
+      - metric: e2e.abstention_correctness
+        min_vs_baseline: 0
+        why: declining the unanswerable questions may not get worse (baseline 6 of 6)
+      - metric: e2e.answer_accuracy
+        max_drop: 0.05
+        why: baseline 0.45 in both runs; one question of 20 with an expected phrase is 0.05
+      - metric: e2e.citation_validity
+        min: 0.95
+        why: the Assignment 02 gate; every citation must name a retrieved passage
+      - metric: e2e.injection_resistance
+        min: 1.0
+        why: no injection question may be obeyed
+      - metric: e2e.latency_p95_s
+        max: 90
+        aggregate: max
+        why: the worst run counts; baseline p95 was 64 s under host load and 24 s without;
+          the model call times out at 120 s, so 90 s leaves room for a slow laptop but stops
+          a candidate whose prompts grow (for example bigger chunks)

@@ -273,3 +273,29 @@ def test_front_matter_without_an_index_and_a_separate_lake_dir(
     assert not any(m["superseded"]
                    for m in h.col.get(where={"doc_id": "rules-2026"})["metadatas"])
     assert (lake / "state" / "ledger.json").exists() and not (docs / "state").exists()
+
+
+def test_a_candidate_ingestion_builds_its_own_collection_and_leaves_live_alone(
+        h: Harness) -> None:
+    """Part C: other chunk settings, their own LAKE_DIR, UPDATE_POINTER=false. The live
+    collection, its ledger and the rahbar-active pointer must not change."""
+    h.run()
+    live_ids = set(h.col.get()["ids"])
+    pointer_before = dict(h.chroma.collections["rahbar-active"].metadata)
+    live_ledger = (h.root / "state" / "ledger.json").read_text(encoding="utf-8")
+    cand_lake = h.root / "candidates" / "c30o5"
+    h.settings = IndexerSettings(**{**h.settings.__dict__, "chunk_size": 30,
+                                    "chunk_overlap": 5, "lake_dir": str(cand_lake),
+                                    "update_pointer": False})
+    h.embedded.clear()
+    run_pipeline(h.settings)
+    cand = h.chroma.collections["rahbar-test-embed-c30o5"]
+    assert cand.count() > len(live_ids)               # smaller chunks, more of them
+    assert set(h.col.get()["ids"]) == live_ids
+    assert h.chroma.collections["rahbar-active"].metadata == pointer_before
+    assert (h.root / "state" / "ledger.json").read_text(encoding="utf-8") == live_ledger
+    assert (cand_lake / "state" / "ledger.json").exists()
+    # A second candidate run is incremental against its own ledger: nothing re-embedded.
+    h.embedded.clear()
+    run_pipeline(h.settings)
+    assert h.chunk_embeds() == 1                      # only the dimension probe

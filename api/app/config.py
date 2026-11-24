@@ -32,6 +32,10 @@ class Settings:
     chroma_host: str = "chroma"
     chroma_port: int = 8000
     collection: str = "rahbar"
+    # Assignment 03, Part C/F: pins this Deployment to one collection (the live api and the
+    # candidate each name their own). Empty: follow the rahbar-active pointer, as before.
+    # A release changes it, so `kubectl rollout undo` returns to the previous collection.
+    retrieval_collection: str = ""
 
     # Semantic cache (section 3.3). Readiness also requires it to answer (section 4.3).
     redis_url: str = "redis://redis:6379/0"
@@ -66,6 +70,7 @@ def get_settings() -> Settings:
         chroma_host=os.environ.get("CHROMA_HOST", "chroma"),
         chroma_port=_int("CHROMA_PORT", 8000),
         collection=os.environ.get("CHROMA_COLLECTION", "rahbar"),
+        retrieval_collection=os.environ.get("RETRIEVAL_COLLECTION", ""),
         redis_url=os.environ.get("REDIS_URL", "redis://redis:6379/0"),
         top_k=_int("TOP_K", 5),
         max_context_passages=_int("MAX_CONTEXT_PASSAGES", 3),

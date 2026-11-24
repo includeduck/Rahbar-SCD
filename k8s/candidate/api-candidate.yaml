@@ -1,0 +1,147 @@
+# The Part C candidate as a second Deployment with its own Service and its own collection
+# (Assignment 03, F3). The same image and ConfigMap as the live api; only RETRIEVAL_COLLECTION
+# differs. It is not behind the Ingress: only the eval Job reaches it (k8s/base/eval.yaml).
+#
+#   kubectl apply -f k8s/candidate/api-candidate.yaml
+#   kubectl -n rahbar rollout status deployment/api-candidate
+#   kubectl delete -f k8s/candidate/api-candidate.yaml          # when the experiment is over
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-candidate
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api-candidate
+    app.kubernetes.io/part-of: rahbar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-candidate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api-candidate
+        app.kubernetes.io/part-of: rahbar
+    spec:
+      serviceAccountName: api
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: rahbar-api:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: rahbar-config
+            - secretRef:
+                name: rahbar-secret
+                optional: true
+          env:
+            - name: RETRIEVAL_COLLECTION
+              value: rahbar-nomic-embed-text-c250o50
+          startupProbe:
+            httpGet: {path: /healthz, port: 8000}
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: 8000}
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: {path: /readyz, port: 8000}
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          volumeMounts:
+            - {name: traces, mountPath: /traces}
+            - {name: tmp, mountPath: /tmp}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: traces
+          persistentVolumeClaim:
+            claimName: traces
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-candidate
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api-candidate
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api-candidate
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+---
+# The live api's network paths, for the candidate's label: out to Chroma and Redis (Ollama is
+# in the overlay's egress policy), and Chroma and Redis accept it. Ingress from the eval pods
+# is in k8s/base/eval.yaml.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-candidate
+  namespace: rahbar
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-candidate
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: chroma
+      ports:
+        - {protocol: TCP, port: 8000}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: redis
+      ports:
+        - {protocol: TCP, port: 6379}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chroma-redis-from-api-candidate
+  namespace: rahbar
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: [chroma, redis]
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-candidate
+      ports:
+        - {protocol: TCP, port: 8000}
+        - {protocol: TCP, port: 6379}

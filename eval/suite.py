@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -500,7 +501,10 @@ def write_outputs(result: dict[str, Any], out_dir: Path, name: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{name}.json"
     path.write_text(json.dumps(result, indent=1, ensure_ascii=False), encoding="utf-8")
-    (out_dir / f"{name}.md").write_text(f"# {name}\n\n{summary_table(result)}", encoding="utf-8")
+    gate = result.get("gate", {}).get("text")
+    (out_dir / f"{name}.md").write_text(
+        f"# {name}\n\n{summary_table(result)}" + (f"\n```\n{gate}\n```\n" if gate else ""),
+        encoding="utf-8")
     first = result["runs"][0].get("e2e")
     if first:
         golden = {q["id"]: q for q in result["golden_questions"]}
@@ -529,6 +533,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--judge-model", default=os.environ.get("JUDGE_MODEL") or None)
     parser.add_argument("--limit", type=int, help="only the first N questions (debugging)")
     parser.add_argument("--timeout", type=float, default=300)
+    parser.add_argument("--gate", action="store_true",
+                        default=os.environ.get("EVAL_GATE", "") == "1",
+                        help="apply the release gate against --baseline; exit 1 if it fails")
+    parser.add_argument("--baseline", type=Path,
+                        default=Path(os.environ["EVAL_BASELINE"])
+                        if os.environ.get("EVAL_BASELINE") else None,
+                        help="the result to gate against (default <out-dir>/baseline.json)")
+    parser.add_argument("--save-baseline", action="store_true",
+                        default=os.environ.get("EVAL_SAVE_BASELINE", "") == "1",
+                        help="if the gate passes (or is not applied), make this the baseline")
     args = parser.parse_args(argv)
     args.stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     levels = [x.strip() for x in args.levels.split(",") if x.strip()]
@@ -568,8 +582,25 @@ def main(argv: list[str] | None = None) -> int:
     name = f"suite-{args.label}-{args.stamp}"
     path = write_outputs(result, args.out_dir, name)
     print("\n" + summary_table(result))
+    status = 0
+    baseline_path = args.baseline or args.out_dir / "baseline.json"
+    if args.gate:
+        from eval.gate import DEFAULT_CONFIG, evaluate, label, load_config, render
+
+        baseline = (json.loads(baseline_path.read_text(encoding="utf-8"))
+                    if baseline_path.exists() else None)
+        passed, rows = evaluate(load_config(DEFAULT_CONFIG), result, baseline)
+        text = render(rows, passed, label(result, "candidate"), label(baseline, "baseline"))
+        result["gate"] = {"passed": passed, "rows": rows, "config": DEFAULT_CONFIG,
+                          "baseline": str(baseline_path) if baseline else None, "text": text}
+        path = write_outputs(result, args.out_dir, name)
+        print(text, flush=True)
+        status = 0 if passed else 1
     print(f"results: {path} (+ .md summary, -judge-sheet.jsonl)", flush=True)
-    return 0
+    if args.save_baseline and status == 0:
+        shutil.copyfile(path, baseline_path)
+        print(f"saved as the baseline: {baseline_path}", flush=True)
+    return status
 
 
 if __name__ == "__main__":

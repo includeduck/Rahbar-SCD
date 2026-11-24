@@ -55,7 +55,10 @@ class ChromaRetriever:
     def _resolve_collection_name(self) -> str:
         """Return the active generation collection name, or fall back to
         ``settings.collection`` for backward compatibility with the dummy
-        indexer (which writes directly to ``rahbar``)."""
+        indexer (which writes directly to ``rahbar``). RETRIEVAL_COLLECTION, when set, pins
+        this Deployment to one collection and the pointer is not read."""
+        if self.settings.retrieval_collection:
+            return self.settings.retrieval_collection
         try:
             resp = self._chroma.get(f"{COLLECTIONS}/{POINTER_COLLECTION}")
             if resp.status_code == 200:

@@ -33,6 +33,24 @@ patches:
       - op: replace
         path: /spec/template/spec/containers/0/args
         value: ["python", "-m", "pipeline.run", "--dummy"]
+  # The dummy index is the `rahbar` collection, so the api follows the pointer here instead of
+  # the collection the live overlays pin (k8s/base/api-release.yaml).
+  - target:
+      kind: Deployment
+      name: api
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: api
+      spec:
+        template:
+          spec:
+            containers:
+              - name: api
+                env:
+                  - name: RETRIEVAL_COLLECTION
+                    value: ""
   - target:
       kind: CronJob
       name: reindex

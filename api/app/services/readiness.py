@@ -74,18 +74,20 @@ def check_chroma(http: httpx.Client, settings: Settings, result: Readiness) -> R
         return result.fail("chroma", f"unreachable: {type(exc).__name__}")
     result.checks["chroma"] = "ok"
 
-    # Resolve the active collection via the pointer, falling back to
-    # settings.collection for backward compat with the dummy indexer.
-    collection_name = settings.collection
-    try:
-        pointer_resp = http.get(f"{COLLECTIONS}/{POINTER_COLLECTION}")
-        if pointer_resp.status_code == 200:
-            pointer_meta = pointer_resp.json().get("metadata") or {}
-            active = pointer_meta.get("active")
-            if active and isinstance(active, str):
-                collection_name = active
-    except httpx.HTTPError:
-        pass  # fall back to settings.collection
+    # A Deployment pinned with RETRIEVAL_COLLECTION checks that collection. Otherwise resolve
+    # the active collection via the pointer, falling back to settings.collection for
+    # backward compat with the dummy indexer.
+    collection_name = settings.retrieval_collection or settings.collection
+    if not settings.retrieval_collection:
+        try:
+            pointer_resp = http.get(f"{COLLECTIONS}/{POINTER_COLLECTION}")
+            if pointer_resp.status_code == 200:
+                pointer_meta = pointer_resp.json().get("metadata") or {}
+                active = pointer_meta.get("active")
+                if active and isinstance(active, str):
+                    collection_name = active
+        except httpx.HTTPError:
+            pass  # fall back to settings.collection
 
     response = http.get(f"{COLLECTIONS}/{collection_name}")
     if response.status_code == 404:
