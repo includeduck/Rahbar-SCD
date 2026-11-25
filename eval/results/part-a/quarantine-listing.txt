@@ -1,0 +1,12 @@
+./20261121T135051Z/batch-b/academic-rules-truncated.pdf
+./20261121T135051Z/batch-b/academic-rules-truncated.pdf.reason.json
+./20261121T135051Z/batch-b/fee-structure-copy.html
+./20261121T135051Z/batch-b/fee-structure-copy.html.reason.json
+./20261121T135051Z/batch-b/garbled-scan.txt
+./20261121T135051Z/batch-b/garbled-scan.txt.reason.json
+./20261121T135051Z/batch-b/grading-copy.html
+./20261121T135051Z/batch-b/grading-copy.html.reason.json
+./20261121T135051Z/batch-b/grading-near-duplicate.html
+./20261121T135051Z/batch-b/grading-near-duplicate.html.reason.json
+./20261121T135051Z/batch-b/untitled-notice.md
+./20261121T135051Z/batch-b/untitled-notice.md.reason.json

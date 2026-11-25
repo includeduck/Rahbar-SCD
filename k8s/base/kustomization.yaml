@@ -19,3 +19,10 @@ resources:
   - reindex-cronjob.yaml
   - hpa.yaml
   - networkpolicy.yaml
+  - traces.yaml                 # Assignment 03: the query traces volume
+  - eval.yaml                   # Assignment 03: what the eval Job needs (k8s/eval-job.yaml)
+  - gate-configmap.yaml         # Assignment 03: the release gate's thresholds
+
+patches:
+  - path: api-traces-patch.yaml
+  - path: api-release.yaml      # Assignment 03: the collection the live api serves

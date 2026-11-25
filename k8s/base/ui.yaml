@@ -51,10 +51,11 @@ spec:
             preStop:
               exec:
                 command: ["sleep", "5"]
+          # Measured 24 Nov 2026 (eval/results/part-f): 1-3m CPU, 3-8 MiB, memory.peak 17 MiB.
           resources:
             requests:
               cpu: 10m
-              memory: 16Mi
+              memory: 24Mi
             limits:
               cpu: 100m
               memory: 64Mi

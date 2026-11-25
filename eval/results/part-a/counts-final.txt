@@ -1,0 +1,16 @@
+collection rahbar-nomic-embed-text-c400o50: 699 chunks
+doc_id                                                     status     version   ledger chroma
+academic-rules-handbook-jun-2026                           active     2026-06      251    251
+annual-report-2019-20                                      archived   2019-20       48     48
+annual-report-2023-24                                      active     2023-24      168    168
+course-withdrawal-faq                                      deleted    2026-11        0      0
+examination-hall-rules                                     active     2026-11       12     12
+faculty-entrepreneurship-and-technical-start-ups-policy    active     2022-05        5      5
+fee-structure-2027-28-revision                             active     2027-28        4      4
+fee-structure-page                                         archived   2026-27        9      9
+grading-page                                               active     2026           7      7
+library-services-guide                                     active     2026-11        5      5
+prospectus-2026-academic-rules-and-regulations             active     2026          18     18
+student-handbook-jun-2026                                  active     2026-06       71     71
+undergraduate-academic-rules-aug-2023                      archived   2023-08      101    101
+orphan chunks (in Chroma, not expected by the ledger): 0

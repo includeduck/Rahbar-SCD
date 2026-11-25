@@ -1,5 +1,6 @@
 ---
 source: academic-rules-2026.md
+family: academic-rules
 doc_version: 2026
 superseded: false
 ---

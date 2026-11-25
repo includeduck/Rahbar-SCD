@@ -1,0 +1,39 @@
+{
+ "run": "20261121T135718Z",
+ "collection": "rahbar-nomic-embed-text-c400o50",
+ "embedded_chunks": 0,
+ "reused_chunks": 699,
+ "deleted_chunks": 0,
+ "added": 0,
+ "replaced": 0,
+ "unchanged": 10,
+ "archived": 1,
+ "restored": 1,
+ "quarantined": 0,
+ "deleted": 0,
+ "documents": {
+  "added": [],
+  "replaced": [],
+  "unchanged": [
+   "academic-rules-handbook-jun-2026",
+   "annual-report-2019-20",
+   "annual-report-2023-24",
+   "faculty-entrepreneurship-and-technical-start-ups-policy",
+   "grading-page",
+   "prospectus-2026-academic-rules-and-regulations",
+   "student-handbook-jun-2026",
+   "undergraduate-academic-rules-aug-2023",
+   "examination-hall-rules",
+   "library-services-guide"
+  ],
+  "archived": [
+   "fee-structure-2027-28-revision"
+  ],
+  "restored": [
+   "fee-structure-page"
+  ],
+  "quarantined": [],
+  "deleted": []
+ },
+ "fingerprints_embedded": 0
+}

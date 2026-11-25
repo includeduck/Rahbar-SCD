@@ -1,4 +1,4 @@
-"""Prometheus metrics at /metrics (section 4.8).
+"""Prometheus metrics at /metrics (section 4.8; Assignment 03, D3).
 
 Request count and latency are wired up already. Additional metrics:
 retrieval latency, generation latency, cache hits, abstentions, fallbacks, tokens.
@@ -40,6 +40,24 @@ ABSTENTIONS = Counter("rahbar_abstentions_total", "Questions where the system ab
 FALLBACKS = Counter("rahbar_fallbacks_total", "Answers that used the safe fallback")
 SUPPORT_REPLIES = Counter("rahbar_support_replies_total",
                           "Questions that mentioned self-harm and got the support message")
+
+# Assignment 03, D3. Abstention rate = rahbar_responses_total{outcome=~"abstain.*"} over all
+# responses (ABSTENTIONS above counts the relevance floor only, as in Assignment 02).
+RESPONSES = Counter("rahbar_responses_total", "Answers by how they ended (the trace outcome)",
+                    ["outcome"])
+TOP1_SIMILARITY = Histogram(
+    "rahbar_top1_similarity",
+    "Similarity of the best retrieved passage (1 - cosine distance)",
+    buckets=(0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.9, 1.0),
+)
+STAGE_LATENCY = Histogram(
+    "rahbar_stage_seconds",
+    "Latency of one stage of the query pipeline",
+    ["stage"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60),
+)
+INJECTION_FLAGGED = Counter("rahbar_injection_flagged_total",
+                            "Prompt-injection attempts flagged, by guardrail rail", ["rail"])
 
 # Token counters (approximate)
 TOKENS_IN = Counter("rahbar_tokens_in_total", "Approximate input tokens to the LLM")

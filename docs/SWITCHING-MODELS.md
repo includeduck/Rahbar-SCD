@@ -13,6 +13,38 @@ restart the api (it reads its configuration at start), and check that the change
 The shipped default is `llama3.2:3b` on host Ollama (`LLM_PROVIDER=ollama-host`). It needs no
 key, and no question leaves the machine.
 
+## Quick switch
+
+For the three models we have tried, one command does all of the steps below:
+
+```bash
+make model M=llama
+```
+
+| `M=` | Model | Needs |
+| --- | --- | --- |
+| `llama` | `llama3.2:3b` on host Ollama (the default) | Nothing; no question leaves the machine |
+| `dots` | `dots-studio/dots-3-note-preview:free` on OpenRouter | The key Secret (1.2) |
+| `gemma` | `google/gemma-4-31b-it:free` on OpenRouter | The key Secret (1.2) |
+| `status` | Shows what the api is running, and whether the hosted egress rule and the Secret exist | |
+
+[`scripts/switch-model.sh`](../scripts/switch-model.sh) (also runnable directly) applies the
+right configuration, removes the hosted egress rule when switching to `llama`, restarts the api,
+clears the semantic cache so no answer from the previous model is served, and reads the live
+settings back to show the switch took. It refuses a hosted model while the Secret is missing. In
+WSL it uses `k8s/overlays/dev-wsl` and the `host.docker.internal` Ollama address by itself (set
+`RAHBAR_WSL=0` or `1` to override). A switch takes about 20 seconds. The model IDs live in the
+script; `k8s/overlays/hosted` keeps Dots3-Note, the model measured in
+[`docs/evidence/hosted-model-comparison.txt`](evidence/hosted-model-comparison.txt).
+
+Tested on 12 Nov on the WSL cluster: all three switches, `status`, and the refusal without a
+Secret. Dots3-Note answered "What attendance do I need to sit the final exam?" from clauses 1.21
+and 1.22. Gemma's free endpoint answered HTTP 429 at the time ("temporarily rate-limited
+upstream": Google AI Studio's shared free pool), so every question fell back; that is
+OpenRouter's limit, not a configuration problem, and `scripts/why_abstain.py` names it.
+
+The rest of this guide is the same steps by hand, for any other model.
+
 All commands run from the repository root against the cluster where RAHBAR is deployed. Check
 which one that is first:
 
@@ -59,6 +91,13 @@ the api no internet access at all, so without that policy every hosted call time
 kubectl apply -k k8s/overlays/hosted
 ```
 
+On minikube inside WSL 2 (README step 2), the hosted overlay would put back the Ollama address
+that WSL cannot reach, so render it with `host.docker.internal` instead (tested on 11 Nov):
+
+```bash
+kubectl kustomize k8s/overlays/hosted | sed 's#http://host.minikube.internal:11434#http://host.docker.internal:11434#' | kubectl apply -f -
+```
+
 ```bash
 kubectl -n rahbar rollout restart deploy/api && kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
@@ -100,6 +139,8 @@ so remove the hosted egress policy by hand:
 ```bash
 kubectl apply -k k8s/overlays/dev
 ```
+
+(On minikube inside WSL 2, apply `k8s/overlays/dev-wsl` instead.)
 
 ```bash
 kubectl -n rahbar delete networkpolicy allow-api-hosted-llm-egress

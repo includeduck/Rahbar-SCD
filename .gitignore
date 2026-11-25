@@ -22,6 +22,8 @@ venv/
 
 # Local scratch
 *.log
+# ...except the Job logs kept as evidence of a run (Assignment 03 results)
+!eval/results/**/*.log
 .DS_Store
 
 # Assignment handout and starter archive: course material, never committed
@@ -34,3 +36,5 @@ htmlcov/
 
 # VSCODE files
 .vscode/
+# Assignment 03 report: rebuilt by report/build_report.py
+report/build/

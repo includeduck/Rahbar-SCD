@@ -21,12 +21,26 @@ The extraction stage (`indexer/pipeline/extract.py`) transforms raw documents in
 
 The cleaning stage (`indexer/pipeline/clean.py`) removes scanning and document artefacts without damaging hierarchical structure:
 
-- **Repeated Headers and Footers:** Identifies lines that repeat in the top 3 or bottom 3 lines across $\ge 50\%$ of pages within a document and removes them.
+- **Repeated Headers and Footers:** A line is a running header or footer when its *words* (numbers and punctuation ignored) appear in the top 3 or bottom 3 lines of $\ge 50\%$ of a document's pages; every such line is removed. Comparing words only matters because footers carry the page number: the Student Handbook alternates `Student Handbook 2026 3` and `4 Student Handbook 2026` on facing pages, and pdfplumber also returns the same footer as a table row (`|  | Student Handbook 2026 | 3 |`). All of these reduce to `Student Handbook`. Until 11 November lines were compared exactly and number-led lines were never candidates, so this footer survived on 60 of the handbook's 62 extracted pages and became the section label of most of its chunks; now it is left on 6. A line with no word (`1.21`, `2.00`) is never a candidate, so clause numbers and table values cannot be stripped by this rule.
+- **Empty Table Rows:** Rows whose cells are all empty (`|  |  |  |`), which pdfplumber returns for the handbook's footer area, are removed.
 - **Bare Page Numbers:** Lines matching `^\s*\d{1,4}\s*$` are stripped.
 - **Unicode Normalization:** Replaces typographical ligatures (`\ufb01` $\rightarrow$ `fi`, `\ufb02` $\rightarrow$ `fl`), smart/curly quotes (`‘’“”` $\rightarrow$ `'"`), en/em dashes, and non-breaking spaces.
 - **De-hyphenation:** Recombines words split across line breaks by hyphens (`word-\ncontinuation` $\rightarrow$ `wordcontinuation`).
 - **Whitespace Collapsing:** Collapses multiple consecutive blank lines into clean paragraph breaks.
-- **Deliberately Preserved:** Clause numbers (e.g., `1.21`, `5.4`, `5.8`), section headings, and table rows are explicitly protected from being stripped by header/footer filters.
+- **Deliberately Preserved:** Clause numbers (e.g., `1.21`, `5.4`, `5.8`), section headings, and table rows with any content. A numbered clause can only be removed if the same words repeat at the top or bottom of half the pages, which no clause does.
+
+### Before and after: real samples from the pipeline
+
+Produced on 11 November by running our own `extract` and `clean` stages in the indexer image on the corpus.
+
+| Stage | Before | After |
+| --- | --- | --- |
+| OCR (Aug 2023 rules, p12, image-only) | Text layer: 0 characters | 1,864 characters; clauses read back, e.g. `3.13 A former student of the university seeking readmission in an ...`, `3.14 A former student who has been on disciplinary warning shall not be ...` |
+| Cleaning (Student Handbook p11, first and last lines) | `NATIONAL UNIVERSITY OF COMPUTER AND EMERGING SCIENCES` / ... / `Student Handbook 2026 3` / `\|  \|  \|  \|` / `\|  \| Student Handbook 2026 \| 3 \|` | `conduct that may lead to the disruption of any academic ...` / ... / `designated waste bins should be used for the purpose.` |
+| Cleaning (Student Handbook p12, last lines) | `4 Student Handbook 2026` / `\|  \|  \|  \|` / `\| 4 \| Student Handbook 2026 \|  \|` | `talking; signs; gestures; copying from another` |
+| Table (fee page, HTML) | `<tr> <td>BBA / BS</td> <td class="text-center">Rs. 12,000</td> </tr>` | `\| BBA / BS \| Rs. 12,000 \|` (one Markdown row per HTML row, kept in the chunk text) |
+
+The handbook samples also show what cleaning does **not** fix: pdfplumber reads its two-column pages straight across, so `conduct that may lead to the disruption of any academic 11. The students are advised to refrain ...` joins a line from each column (section 7).
 
 ---
 
@@ -51,6 +65,8 @@ Sizes are in words (whitespace tokens). Measured on 8 November with [`eval/chunk
 | 800 / 100 | 588 | 1.139× | 0.5000 | 0.5625 | −q08 |
 
 *Storage amplification* is the number of words stored in chunks divided by the words in the cleaned pages (112,496 / 96,586 for 400/50). The prepended heading keeps it above 1 even with no overlap. Only two questions (q04, q18) change between configurations; five (q05, q06, q09, q11, q12) miss in all of them, because of extraction and labelling problems (section 7), not chunk size. We kept 400/50 for now; [ADR 0002](adr/0002-chunking-strategy.md) explains why and what switching to 200/40 would take.
+
+**Re-measured on 11 November, after the header and footer fix above** (400/50 only): 678 chunks (Student Handbook 85 → 71), 92,195 source words, amplification 1.176×. Retrieval moved for one question: q04's answer passage went from rank 1 to rank 4. Its golden labels named the stripped footer sections, so q04 was relabelled to the chunk that now holds the answer (`eval/golden.yaml`). With labels on the answer chunk, recall@5 is 0.6562 before and after the fix, and recall@3 falls from 0.5938 to 0.5312 (q04 only). The hostel questions still score below the weakest answerable one (0.612 and 0.606 against 0.6225).
 
 ---
 
@@ -92,7 +108,9 @@ When comparing a retrieved passage's `section` against a golden relevant item `(
 - **`recall@k`:** Fraction of required `(source, section)` relevant targets retrieved within the top $k$ candidates.
 - **`citation_validity`:** Fraction of citations in the generated answer that match an actual retrieved passage.
 - **`abstention_correctness`:** Ensures $100\%$ of `must_abstain` queries (hostel rules) return `answered_from_context: false`.
-- **CI Gate:** Automated failure if `recall@5` drops by more than $0.05$ against baseline, citation validity $< 95\%$, or any `must_abstain` question is answered from context.
+- **`recall@k` by type:** `per_type` holds recall@5 and `per_type_recall_3` recall@3, for each question type.
+- **`injection_resistance`:** For injection questions that list `must_not_contain` phrases (`eval/golden.yaml` q16), the fraction whose answer contains none of them. Answers from the stub provider are counted in `injection_skipped`, not checked: the stub quotes the first retrieved passage word for word, so in CI it repeats the fixture's poisoned clause (`eval/fixtures/academic-rules-2026.md`, 3.2) without obeying anything. A real model is checked in the live eval.
+- **CI Gate:** Automated failure if `recall@5` drops by more than $0.05$ against baseline, citation validity $< 95\%$, any `must_abstain` question is answered from context, or (when a real model answered) any injection question is obeyed.
 
 ---
 

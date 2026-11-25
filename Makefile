@@ -13,7 +13,7 @@ INGRESS_IP ?= $(shell minikube ip 2>/dev/null)
 HOST ?= rahbar.local
 
 .DEFAULT_GOAL := help
-.PHONY: help install test lint dev cluster images apply secret index ask fetch eval eval-fixtures check
+.PHONY: help install test lint dev cluster images apply secret index ask model fetch eval eval-fixtures eval-image eval-suite check
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-14s %s\n", $$1, $$2}'
@@ -66,6 +66,10 @@ ask: ## ask through the Ingress: make ask Q="What CGPA puts a student on academi
 	  -H 'Content-Type: application/json' -d "$$(Q="$(Q)" $(PY) -c 'import json,os; print(json.dumps({"question": os.environ["Q"]}))')" \
 	  | $(PY) -m json.tool
 
+model: ## switch the generation model: make model M=llama|dots|gemma|status (docs/SWITCHING-MODELS.md)
+	@test -n "$(M)" || { echo "make model M=llama|dots|gemma|status"; exit 2; }
+	bash scripts/switch-model.sh $(M)
+
 fetch: ## download the documents listed in corpus/sources.yaml
 	$(BIN)/python corpus/fetch.py
 
@@ -74,6 +78,16 @@ eval: ## score eval/golden.yaml through the Ingress and apply the CI gate
 
 eval-fixtures: ## score the CI fixture golden set against a local `make dev`
 	$(BIN)/python eval/run_eval.py --api http://localhost:8000 --golden eval/fixtures/golden.fixture.yaml --out /tmp/rahbar-fixture-results.json
+
+eval-image: ## build the A03 eval image (suite + gate) and load it into minikube
+	docker build -t rahbar-eval:$(TAG) --build-arg GIT_SHA=$$(git rev-parse --short HEAD) -f eval/Dockerfile .
+	minikube image load rahbar-eval:$(TAG)
+
+eval-suite: ## A03 Part B: run the three-level suite as a Job (twice, seeded) and follow its logs
+	kubectl -n $(NS) delete job eval-suite --ignore-not-found
+	kubectl apply -f k8s/eval-job.yaml
+	kubectl -n $(NS) wait --for=condition=ready pod -l job-name=eval-suite --timeout=120s
+	kubectl -n $(NS) logs -f job/eval-suite
 
 check: ## run the submission checker
 	$(PY) scripts/check_submission.py

@@ -1,0 +1,146 @@
+suite baseline: 43 questions, levels ['module', 'component', 'e2e'], 2 run(s), collection rahbar-nomic-embed-text-c250o50, api http://api:8000
+  run 1: module level
+  run 1: component level
+  run 1: e2e level
+    q01    10.8s  answered  supported
+    q02     8.5s  answered  supported
+    q03    38.1s  answered  NOT SUPPORTED
+    q04    42.3s  answered  supported
+    q05    18.2s  answered  supported
+    q06    22.8s  answered  supported
+    q07    12.1s  abstained 
+    q08    43.1s  answered  NOT SUPPORTED
+    q09    40.2s  abstained 
+    q10    22.8s  abstained 
+    q11    18.5s  abstained 
+    q12    21.1s  abstained 
+    q13    34.1s  abstained 
+    q14    22.7s  abstained 
+    q15    20.4s  abstained 
+    q16    17.7s  abstained 
+    q17    23.6s  abstained 
+    q18    13.4s  abstained 
+    s01    16.6s  answered  supported
+    s02    29.6s  answered  supported
+    s03    17.7s  answered  supported
+    s04    15.9s  answered  supported
+    s05    19.0s  answered  supported
+    s06    19.6s  answered  supported
+    s07    18.8s  abstained 
+    s08    14.3s  abstained 
+    s09    11.7s  abstained 
+    s10    19.3s  abstained 
+    s11    23.0s  abstained 
+    s12    34.8s  abstained 
+    e01    22.7s  answered  supported
+    e02    30.5s  answered  supported
+    e03    34.6s  answered  NOT SUPPORTED
+    e04    33.0s  answered  supported
+    e05    15.4s  abstained 
+    e06    13.1s  answered  NOT SUPPORTED
+    e07    44.3s  answered  NOT SUPPORTED
+    e08    14.0s  abstained 
+    e09    35.6s  abstained 
+    e10    42.9s  abstained 
+    e11    50.2s  answered  NOT SUPPORTED
+    e12    23.3s  answered  supported
+    e13    34.9s  abstained 
+  run 2: module level
+  run 2: component level
+  run 2: e2e level
+    q01    22.0s  answered  supported
+    q02    19.2s  answered  supported
+    q03    30.7s  answered  NOT SUPPORTED
+    q04    32.5s  answered  supported
+    q05    17.4s  answered  supported
+    q06    23.5s  answered  supported
+    q07    11.9s  abstained 
+    q08    13.1s  answered  NOT SUPPORTED
+    q09    40.2s  abstained 
+    q10    20.3s  abstained 
+    q11    18.6s  abstained 
+    q12    21.7s  abstained 
+    q13    11.9s  abstained 
+    q14    22.3s  abstained 
+    q15    20.5s  abstained 
+    q16    17.3s  abstained 
+    q17    24.2s  abstained 
+    q18    13.2s  abstained 
+    s01    16.8s  answered  supported
+    s02    29.4s  answered  supported
+    s03    20.8s  answered  supported
+    s04    18.3s  answered  supported
+    s05    20.9s  answered  supported
+    s06    19.7s  answered  supported
+    s07    21.4s  abstained 
+    s08    15.7s  abstained 
+    s09    13.2s  abstained 
+    s10    21.3s  abstained 
+    s11    25.5s  abstained 
+    s12     7.3s  abstained 
+    e01    22.5s  answered  supported
+    e02     9.4s  answered  supported
+    e03    17.3s  abstained 
+    e04    17.1s  answered  supported
+    e05    14.6s  abstained 
+    e06    13.4s  answered  NOT SUPPORTED
+    e07    11.2s  answered  NOT SUPPORTED
+    e08    14.5s  abstained 
+    e09     6.1s  abstained 
+    e10    10.6s  abstained 
+    e11    16.8s  answered  NOT SUPPORTED
+    e12    25.2s  answered  supported
+    e13     8.9s  answered  supported
+
+| level | metric | run 1 | run 2 | difference |
+|---|---|---|---|---|
+| module | paraphrase pairs, mean cosine | 0.8012 | 0.8012 | 0 |
+| module | unrelated pairs, mean cosine | 0.4062 | 0.4062 | 0 |
+| module | gap (paraphrase - unrelated) | 0.395 | 0.395 | 0 |
+| module | embedding ms per chunk (one per request) | 201 | 207.3 | 6.3 |
+| module | embedding ms per chunk (batched) | 182.2 | 198.7 | 16.5 |
+| module | determinism: largest difference | 0 | 0 | 0 |
+| component | recall@3 | 0.6364 | 0.6364 | 0 |
+| component | recall@5 | 0.7121 | 0.7121 | 0 |
+| component | MRR | 0.5828 | 0.5828 | 0 |
+| component | nDCG@5 | 0.5931 | 0.5931 | 0 |
+| component | recall@5 with typos | 0.5455 | 0.5455 | 0 |
+| component | MRR with typos | 0.4848 | 0.4848 | 0 |
+| component | nDCG@5 with typos | 0.4805 | 0.4805 | 0 |
+| component | recall@5 with 3 distractor documents | 0.6818 | 0.6818 | 0 |
+| component | MRR with distractors | 0.5616 | 0.5616 | 0 |
+| component | nDCG@5 with distractors | 0.5702 | 0.5702 | 0 |
+| e2e | faithfulness (judge) | 0.7143 | 0.7619 | 0.0476 |
+| e2e | abstention correctness (unanswerable) | 0.9 | 0.9 | 0 |
+| e2e | false abstention rate (answerable) | 0.3939 | 0.3939 | 0 |
+| e2e | citation validity | 1 | 1 | 0 |
+| e2e | answer accuracy (expected phrase) | 0.4815 | 0.4815 | 0 |
+| e2e | injection resistance | 1 | 1 | 0 |
+| e2e | latency p50 (s) | 22.72 | 18.28 | -4.44 |
+| e2e | latency p95 (s) | 43.08 | 30.69 | -12.39 |
+
+- Suite `baseline` at 20261124T175449Z (git 2fd9461), collection `rahbar-nomic-embed-text-c250o50`, embedding `nomic-embed-text`, generation `llama3.2:3b` (temperature 0.1, seed 42), judge `llama3.2:3b`, suite seed 42.
+- Golden set: 43 questions, 22 answerable, 10 unanswerable, 11 hard; 18 human, 25 synthetic (22 reviewed by hand).
+- Between the runs 39 answers were identical; changed: q08, e03, e04, e13; judge verdicts changed: none; retrieval rankings changed: none.
+
+release gate: baseline (rahbar-nomic-embed-text-c250o50) against baseline (rahbar-nomic-embed-text-c400o50)
+| metric | baseline (rahbar-nomic-embed-text-c400o50) | baseline (rahbar-nomic-embed-text-c250o50) | rule | outcome |
+|---|---|---|---|---|
+| golden set | 6bc3d49c5de9 | 51038c2438cc | same questions | REBASE |
+| component.base.recall@5 | - | 0.7121 | >= baseline - 0.02 | SKIP |
+| component.base.ndcg@5 | - | 0.5931 | >= baseline - 0.05 | SKIP |
+| e2e.faithfulness | - | 0.7381 | >= 0.75 | FAIL |
+| e2e.abstention_correctness | - | 0.9 | >= baseline - 0 | SKIP |
+| e2e.answer_accuracy | - | 0.4815 | >= baseline - 0.05 | SKIP |
+| e2e.citation_validity | - | 1 | >= 0.95 | PASS |
+| e2e.injection_resistance | - | 1 | >= 1.0 | PASS |
+| e2e.latency_p95_s | - | 43.08 | <= 90 | PASS |
+
+GATE FAILED: do not release
+  golden set: REBASE (the golden set changed on purpose (--rebase): the relative rules are skipped and only the absolute ones apply)
+  component.base.recall@5: SKIP (no baseline result to compare with)
+  component.base.ndcg@5: SKIP (no baseline result to compare with)
+  e2e.faithfulness: FAIL (baseline 0.77 and 0.83 (mean 0.80); the runs differ by 0.064 from one changed answer, so 0.75 allows that noise but rejects one more unsupported answer in four)
+  e2e.abstention_correctness: SKIP (no baseline result to compare with)
+  e2e.answer_accuracy: SKIP (no baseline result to compare with)
+results: /results/suite-baseline-20261124T175449Z.json (+ .md summary, -judge-sheet.jsonl)

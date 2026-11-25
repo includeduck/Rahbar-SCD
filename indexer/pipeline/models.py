@@ -32,13 +32,23 @@ class Chunk:
     page: int
     doc_version: str
     superseded: bool
+    # Set by incremental ingestion (pipeline/incremental.py); empty for the dummy index.
+    doc_id: str = ""          # stable per document, e.g. "fee-structure-page"
+    family: str = ""          # documents that are versions of each other share a family
+    title: str = ""
+    content_hash: str = ""    # SHA-256 of the source file, so a changed file is detected
 
     def metadata(self) -> dict[str, str | int | bool]:
         """Chroma metadata values must be str, int, float or bool."""
-        return {
+        meta: dict[str, str | int | bool] = {
             "source": self.source,
             "section": self.section,
             "page": self.page,
             "doc_version": self.doc_version,
             "superseded": self.superseded,
         }
+        for key in ("doc_id", "family", "title", "content_hash"):
+            value = getattr(self, key)
+            if value:
+                meta[key] = value
+        return meta

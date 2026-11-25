@@ -7,12 +7,14 @@ real model. It is deterministic: the same input always gives the same output.
 from __future__ import annotations
 
 from ...schemas import Answer, Citation, Passage
+from ...services.tracing import record_model_call
 
 
 class StubProvider:
     name = "stub"
 
     def generate(self, question: str, passages: list[Passage]) -> Answer:
+        record_model_call(provider=self.name, model="stub", params={}, attempt=1, valid=True)
         if not passages:
             return Answer(
                 reasoning="stub: nothing was retrieved",

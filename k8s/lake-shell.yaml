@@ -1,0 +1,57 @@
+# A helper pod with the corpus volume mounted, for working on the data lake by hand
+# (Assignment 03, Part A demos): change or delete a document, copy in an unseen batch, roll a
+# version back, or count chunks per document. It carries the indexer's labels and
+# ServiceAccount, so the NetworkPolicy lets it reach Chroma like the ingestion Job does.
+#
+#   kubectl apply -f k8s/lake-shell.yaml && kubectl -n rahbar wait --for=condition=ready pod/lake-shell
+#   kubectl -n rahbar cp ./my-docs lake-shell:/corpus/incoming/demo        # an unseen batch
+#   kubectl -n rahbar exec lake-shell -- python -m pipeline.lake counts      # chunks per document
+#   kubectl -n rahbar exec lake-shell -- python -m pipeline.lake restore --family F --version V
+#   kubectl -n rahbar delete pod lake-shell
+#
+# Then run the ingestion Job: kubectl -n rahbar create job --from=cronjob/reindex ingest-<name>
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lake-shell
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: indexer
+    app.kubernetes.io/part-of: rahbar
+spec:
+  serviceAccountName: indexer
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  restartPolicy: Never
+  activeDeadlineSeconds: 7200      # it removes itself after two hours at most
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: shell
+      image: rahbar-indexer:dev
+      imagePullPolicy: IfNotPresent
+      command: ["python", "-c", "import time; time.sleep(7200)"]
+      envFrom:
+        - configMapRef:
+            name: rahbar-config
+      resources:
+        requests: {cpu: 10m, memory: 64Mi}
+        limits: {cpu: 500m, memory: 512Mi}
+      volumeMounts:
+        - {name: corpus, mountPath: /corpus}
+        - {name: tmp, mountPath: /tmp}
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities: {drop: [ALL]}
+  volumes:
+    - name: corpus
+      persistentVolumeClaim:
+        claimName: corpus-data
+    - name: tmp
+      emptyDir: {}

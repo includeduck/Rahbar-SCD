@@ -1,0 +1,31 @@
+# A2 rollback demo, WSL minikube cluster, 21 Nov 2026 (commands run from the repository root)
+# After Batch B, the 2027-28 fee revision is current and the 2026-27 Fee Structure page archived.
+
+$ kubectl -n rahbar exec lake-shell -- python -m pipeline.lake restore --family fee-structure-page --version 2026-27
+restored  fee-structure-page (2026-27): 9 chunks, superseded=False
+archived  fee-structure-2027-28-revision (2027-28): 4 chunks, superseded=True
+pinned fee-structure-page to 2026-27; undo with: python -m pipeline.lake unpin --family fee-structure-page
+
+# the api, cache cleared: "How much is the BS fee per credit hour?"
+answer 'Rs. 12,000', answered_from_context True, cited fee-structure-page.html / Tuition Fee (w.e.f. Fall 2026 ...)
+
+# rerun ingestion: the pin holds although a newer version exists (run 20261121T135718Z)
+A      fee-structure-page.html     pass pass pass pass accept
+batch-b fee-structure-2027-28.md   pass pass FAIL pass archive
+ingestion run 20261121T135718Z: 0 chunks embedded, 699 reused, 0 deleted
+
+$ kubectl -n rahbar exec lake-shell -- python -m pipeline.lake unpin --family fee-structure-page
+unpinned fee-structure-page (was 2026-27); the next ingestion run picks the newest version
+
+# rerun ingestion: the newest version is current again (run 20261121T135918Z)
+A      fee-structure-page.html     pass pass FAIL pass archive
+batch-b fee-structure-2027-28.md   pass pass pass pass accept
+ingestion run 20261121T135918Z: 0 chunks embedded, 699 reused, 0 deleted
+
+# the api again: "I don't have enough relevant information ..." (answered_from_context False).
+# The 2027-28 revision's best chunk scores 0.5606 for this question against 0.6242 for the old
+# page, below unrelated handbook clauses (0.6124): a data-drift finding for Part E3.
+#
+# Two wording fixes followed this run: the pinned run's recency reason now says the version
+# "is pinned as current by a restore", and restore updates the ledger's superseded flag so the
+# next run no longer counts an already-applied flip as "restored 1".

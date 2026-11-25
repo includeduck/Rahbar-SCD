@@ -1,0 +1,11 @@
+# Peak memory of the short Jobs, measured with /usr/bin/time -v on the same code and Python 3.12 (WSL), 2026-11-24T17:40:18Z
+## gate-check: python -m eval.gate on the saved Part C results
+GATE PASSED: release
+	Percent of CPU this job got: 21%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.97
+	Maximum resident set size (kbytes): 18844
+## coverage-check: python -m eval.coverage (42 queries, 43 golden questions, embeddings from Ollama)
+COVERAGE OK
+	Percent of CPU this job got: 8%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:07.95
+	Maximum resident set size (kbytes): 35048

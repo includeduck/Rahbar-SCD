@@ -24,6 +24,11 @@ patches:
       - op: replace
         path: /data/CORPUS_DIR
         value: /app/fixtures
+      # The fixtures are read-only in the image; the data lake (ledger, reports, quarantine)
+      # goes to the Job's writable /tmp instead (indexer/pipeline/lake.py).
+      - op: add
+        path: /data/LAKE_DIR
+        value: /tmp/lake
       # With the stub LLM, only the floor can decline. Measured with nomic-embed-text on the
       # fixtures: answerable questions score 0.680 to 0.818, the hostel question 0.500.
       - op: replace

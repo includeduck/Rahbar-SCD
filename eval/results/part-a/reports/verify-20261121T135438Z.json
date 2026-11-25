@@ -1,0 +1,334 @@
+{
+ "run": "20261121T135438Z",
+ "documents": [
+  {
+   "doc_id": "undergraduate-academic-rules-aug-2023",
+   "file": "undergraduate-academic-rules-aug-2023.pdf",
+   "batch": "A",
+   "family": "academic-rules",
+   "doc_version": "2023-08",
+   "sha256": "cddfe1f5e977",
+   "decision": "archive",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "25,722 characters, 93% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2023-08, 25 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": false,
+     "reason": "newer version 2026-06 (academic-rules-handbook-jun-2026) in family academic-rules"
+    }
+   }
+  },
+  {
+   "doc_id": "academic-rules-handbook-jun-2026",
+   "file": "academic-rules-handbook-jun-2026.pdf",
+   "batch": "A",
+   "family": "academic-rules",
+   "doc_version": "2026-06",
+   "sha256": "4cfee3e191b8",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "78,679 characters, 95% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026-06, 55 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026-06"
+    }
+   }
+  },
+  {
+   "doc_id": "prospectus-2026-academic-rules-and-regulations",
+   "file": "prospectus-2026-academic-rules-and-regulations.pdf",
+   "batch": "A",
+   "family": "prospectus-2026-academic-rules-and-regulations",
+   "doc_version": "2026",
+   "sha256": "a7e7f6896a59",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "27,021 characters, 95% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026, 5 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026"
+    }
+   }
+  },
+  {
+   "doc_id": "student-handbook-jun-2026",
+   "file": "student-handbook-jun-2026.pdf",
+   "batch": "A",
+   "family": "student-handbook-jun-2026",
+   "doc_version": "2026-06",
+   "sha256": "717eb4b8d37e",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "120,155 characters, 95% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026-06, 62 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026-06"
+    }
+   }
+  },
+  {
+   "doc_id": "annual-report-2019-20",
+   "file": "annual-report-2019-20.pdf",
+   "batch": "A",
+   "family": "annual-report",
+   "doc_version": "2019-20",
+   "sha256": "4d1961e340b1",
+   "decision": "archive",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "45,414 characters, 91% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2019-20, 33 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": false,
+     "reason": "newer version 2023-24 (annual-report-2023-24) in family annual-report"
+    }
+   }
+  },
+  {
+   "doc_id": "annual-report-2023-24",
+   "file": "annual-report-2023-24.pdf",
+   "batch": "A",
+   "family": "annual-report",
+   "doc_version": "2023-24",
+   "sha256": "3c9d89e84af2",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "180,467 characters, 91% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2023-24, 85 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2023-24"
+    }
+   }
+  },
+  {
+   "doc_id": "fee-structure-page",
+   "file": "fee-structure-page.html",
+   "batch": "A",
+   "family": "fee-structure-page",
+   "doc_version": "2026-27",
+   "sha256": "ec8872ae77ca",
+   "decision": "archive",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "3,067 characters, 88% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026-27, 1 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": false,
+     "reason": "newer version 2027-28 (fee-structure-2027-28-revision) in family fee-structure-page"
+    }
+   }
+  },
+  {
+   "doc_id": "grading-page",
+   "file": "grading-page.html",
+   "batch": "A",
+   "family": "grading-page",
+   "doc_version": "2026",
+   "sha256": "66a995b4d847",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "3,913 characters, 90% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026, 1 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026"
+    }
+   }
+  },
+  {
+   "doc_id": "faculty-entrepreneurship-and-technical-start-ups-policy",
+   "file": "faculty-entrepreneurship-and-technical-start-ups-policy.pdf",
+   "batch": "A",
+   "family": "faculty-entrepreneurship-and-technical-start-ups-policy",
+   "doc_version": "2022-05",
+   "sha256": "c2d5c7648d15",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "9,854 characters, 95% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2022-05, 8 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2022-05"
+    }
+   }
+  },
+  {
+   "doc_id": "examination-hall-rules",
+   "file": "exam-hall-rules.md",
+   "batch": "batch-b",
+   "family": "examination-hall-rules",
+   "doc_version": "2026-11",
+   "sha256": "8e0e64a533e9",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "819 characters, 92% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026-11, 1 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026-11"
+    }
+   }
+  },
+  {
+   "doc_id": "library-services-guide",
+   "file": "library-services-guide.md",
+   "batch": "batch-b",
+   "family": "library-services-guide",
+   "doc_version": "2026-11",
+   "sha256": "1ddef43683a9",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "622 characters, 91% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2026-11, 1 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2026-11"
+    }
+   }
+  },
+  {
+   "doc_id": "fee-structure-2027-28-revision",
+   "file": "fee-structure-2027-28.md",
+   "batch": "batch-b",
+   "family": "fee-structure-page",
+   "doc_version": "2027-28",
+   "sha256": "9ba6962017fb",
+   "decision": "accept",
+   "checks": {
+    "quality": {
+     "pass": true,
+     "reason": "498 characters, 81% letters"
+    },
+    "completeness": {
+     "pass": true,
+     "reason": "title, version 2027-28, 1 pages"
+    },
+    "uniqueness": {
+     "pass": true,
+     "reason": "no duplicate found"
+    },
+    "recency": {
+     "pass": true,
+     "reason": "current version 2027-28"
+    }
+   }
+  }
+ ],
+ "totals": {
+  "accept": 9,
+  "archive": 3,
+  "quarantine": 0
+ }
+}

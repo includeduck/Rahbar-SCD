@@ -30,6 +30,9 @@ WORKDIR /app
 COPY indexer/pipeline ./pipeline
 # How the real corpus reaches the Job: an initContainer runs fetch.py into a volume (ADR 0001).
 COPY corpus/fetch.py corpus/sources.yaml corpus/MANIFEST.md ./corpus/
+# Batch B (Assignment 03): built on the corpus volume by k8s/ingest-batch-b.yaml.
+COPY corpus/batch_b.py ./corpus/
+COPY corpus/batch-b ./corpus/batch-b
 # The CI corpus: the e2e-eval job sets CORPUS_DIR=/app/fixtures.
 COPY eval/fixtures ./fixtures
 USER 10001

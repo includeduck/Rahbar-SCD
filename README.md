@@ -25,6 +25,30 @@ Muhammad Zain Bin Jabir.
 > (ADRs 0001–0004), engineering notes, and the `e2e-eval` CI gate are complete.
 > Progress: [`PHASES.md`](PHASES.md).
 
+## Assignment 03: RAGOps
+
+Assignment 03 adds operations around the same service: the data lake is verified and updated
+incrementally, the system is tested at three levels, changes are released through a gate,
+every answer can be traced, and coverage and drift are checked. Each part is a Kubernetes
+object you apply, and its results are committed under `eval/results/part-*/`. A fresh
+cluster: [`k8s/README.md`](k8s/README.md). Muhammad Wasay Tariq (24I-3071).
+
+| part | command (namespace `rahbar`, from the repository root) | results |
+|---|---|---|
+| A. Verify and update | `kubectl apply -f k8s/ingest-batch-b.yaml` then `kubectl -n rahbar logs -f job/ingest-batch-b -c indexer`; an unchanged re-run: `kubectl -n rahbar create job --from=cronjob/reindex rerun-unchanged` | [eval/results/part-a](eval/results/part-a/README.md) |
+| B. Three-level suite | `make eval-image && make eval-suite` (Job `eval-suite`, [k8s/eval-job.yaml](k8s/eval-job.yaml)); judge agreement: `python -m eval.agreement <result.json>` | [eval/results/part-b](eval/results/part-b/README.md) |
+| C. Change and gate | the runbook [k8s/candidate/README.md](k8s/candidate/README.md); compare: `python -m eval.compare <baseline.json> <candidate.json>`; the gate alone: `python -m eval.gate --candidate <c.json> --baseline <b.json>` | [eval/results/part-c](eval/results/part-c/README.md) |
+| D. Traces | `kubectl -n rahbar exec deploy/api -- python -m app.trace_tool <trace-id>`; `kubectl -n rahbar exec deploy/api -- python -m app.trace_summary --last 1h`; sample queries: `kubectl -n rahbar exec -i deploy/api -- python - < eval/trace_queries.py` | [eval/results/part-d](eval/results/part-d/README.md) |
+| E. Drift and coverage | `kubectl apply -f k8s/live-traffic-job.yaml`, then `kubectl apply -f k8s/coverage-job.yaml` (fails on a coverage gap); locally: `python -m eval.coverage --queries eval/live_queries.jsonl` | [eval/results/part-e](eval/results/part-e/README.md) |
+| F. Kubernetes | `kubectl apply -k k8s/overlays/dev-wsl`; threshold demo: `kubectl apply -f k8s/gate-job.yaml`; release and undo: [k8s/candidate/README.md](k8s/candidate/README.md) §4 and §5; metrics: `kubectl -n rahbar port-forward svc/api 8000:8000`; resources: `scripts/sample-resources.sh <label> [job]` | [eval/results/part-f](eval/results/part-f/README.md), [k8s/README.md](k8s/README.md) |
+
+The golden set is [`eval/golden.jsonl`](eval/golden.jsonl) (43 questions), the gate's and the
+coverage check's thresholds are the ConfigMap [`k8s/base/gate-configmap.yaml`](k8s/base/gate-configmap.yaml),
+and the screenshots for the report are in [`report/screenshots/`](report/screenshots/README.md).
+Tests: `make test` (api, indexer and eval, no cluster needed).
+
+The rest of this README describes the Assignment 02 service, which Assignment 03 builds on.
+
 ## Architecture
 
 ```mermaid
@@ -64,9 +88,13 @@ docs/        CORPUS, PIPELINE, ARCHITECTURE, ADRs, evidence/, AI-USAGE
 - `make` and bash (Linux, macOS, or WSL 2 on Windows), Python 3.12
 - [Ollama](https://ollama.com) on the host, for embeddings and generation
 
-On Windows, run `make` inside WSL 2, or type the commands each target prints. If your
-distribution's `python3` is newer than 3.12, install 3.12 (for example with
-`uv python install 3.12`) and run `make install PY="$(uv python find 3.12)"`.
+On Windows, either run `make` inside WSL 2, or type the commands each target prints
+(`make -n <target>` shows them) in the shell where minikube is installed. `make` only runs
+those commands, so for the WSL route minikube and `kubectl` must be installed inside WSL as
+well, with Docker Desktop's WSL integration turned on for your distribution; a minikube
+installed on Windows is not visible to `make` in WSL. If your distribution's `python3` is
+newer than 3.12, install 3.12 (for example with `uv python install 3.12`) and run
+`make install PY="$(uv python find 3.12)"`.
 
 ## Without a cluster
 
@@ -105,6 +133,13 @@ ollama pull nomic-embed-text
 We embed through the same Ollama host we generate through: `nomic-embed-text` (768
 dimensions) for both the indexer and the api, pinned in one ConfigMap key.
 
+**minikube running inside WSL 2 with Docker Desktop:** there, `host.minikube.internal` points
+at the cluster's own Docker network gateway (192.168.49.1 for the default profile when we
+checked on 11 Nov), not at Windows, so the cluster cannot reach Ollama through it. `host.docker.internal`
+(192.168.65.254) does reach it, from the node and from pods. Step 5 shows how to apply with
+that address. A minikube installed on Windows resolves `host.minikube.internal` to
+192.168.65.254 and needs no change.
+
 **3. Build the three images and load them into minikube** (minikube cannot see images in
 your own Docker):
 
@@ -128,6 +163,18 @@ make secret
 kubectl apply -k k8s/overlays/dev
 ```
 
+With minikube inside WSL 2 (see step 2), apply the `dev-wsl` overlay instead. It is the dev
+overlay with only `OLLAMA_URL` changed to `host.docker.internal`, and the dev overlay's
+NetworkPolicy already allows that address:
+
+```bash
+kubectl apply -k k8s/overlays/dev-wsl
+```
+
+Use it every time you apply on such a cluster: applying `dev` puts the old address back.
+Patching the ConfigMap after applying is a race: the indexer Job starts at the same moment and
+reads the address when its container starts.
+
 **6. Wait for the indexer Job, then for the api.** The Job first downloads the nine
 documents into the `corpus-data` volume and checks each against
 [`corpus/MANIFEST.md`](corpus/MANIFEST.md), then builds the index (about 9 minutes on a
@@ -138,6 +185,12 @@ exists, is not empty and matches `EMBED_MODEL`:
 kubectl -n rahbar wait --for=condition=complete job/indexer --timeout=30m
 kubectl -n rahbar rollout status deploy/api --timeout=5m
 ```
+
+The api cannot be ready before the index exists, so its Deployment allows a 20-minute rollout
+(`progressDeadlineSeconds: 1200` in `k8s/base/api.yaml`). With Kubernetes' default of
+10 minutes, a slow index made `rollout status` report "exceeded its progress deadline" even
+though the pods turned ready seconds later (on 11 Nov, in WSL, the index took 578.5 s). If
+you still see that message, check `kubectl -n rahbar get pods` before assuming a failure.
 
 **7. Reach the Ingress and ask.** On Linux the Ingress is at `$(minikube ip)`. On macOS or
 Windows with the docker driver, run `minikube tunnel` in another terminal (an administrator
@@ -151,6 +204,23 @@ make ask INGRESS_IP=127.0.0.1 Q="What CGPA puts a student on academic warning?"
 To use the chat page in a browser, add `<ingress ip> rahbar.local` to your hosts file and
 open `http://rahbar.local`.
 
+With minikube inside WSL 2, `$(minikube ip)` cannot be reached from WSL or from Windows (the
+cluster's network lives inside Docker Desktop). Forward the ingress controller instead, in
+another WSL terminal, and ask through it:
+
+```bash
+kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+```
+```bash
+make ask INGRESS_IP=127.0.0.1:8080 Q="What CGPA puts a student on academic warning?"
+```
+
+WSL forwards its `localhost` to Windows, so for the browser add `127.0.0.1 rahbar.local` to
+the Windows hosts file and open `http://rahbar.local:8080`. Without that line the browser
+waits and then reports that the site took too long to respond: Windows looks up `.local`
+names on the local network, and nothing answers. (`minikube tunnel` inside WSL was not
+tried.)
+
 **8. Ask about something the documents do not cover.** Hostel rules are left out on
 purpose; the answer comes back with `"answered_from_context": false`:
 
@@ -162,6 +232,15 @@ Both in the chat page (the default stack, `llama3.2:3b` on host Ollama, 8 Nov 20
 and a question the documents do not cover.
 
 ![The RAHBAR chat page: "What CGPA puts a student on academic warning?" answered 2.00 from clause 5.4 of the academic rules handbook, and "How do I apply for a hostel room?" declined as not covered by the documents](docs/evidence/ui-answer-and-abstention.png)
+
+**Ask in English, or at least use English for the key words.** The documents are in English
+and the embedding model (`nomic-embed-text`) matches English words only. On 11 Nov, "What is
+the university's policy regarding smoking?" found the Code of Conduct first, and "University
+ki *smoking* ke upr kya policy hai?" still found it, because the key word was English. "University
+ki *tumbaku-noshi* ke upr kya policy hai?" (Roman Urdu) and the same question in Urdu script
+found nothing about smoking, so RAHBAR declined them as not covered. It declines rather than
+guessing, but a question in Urdu or Roman Urdu with an Urdu key word will usually not be
+answered even when the documents cover it.
 
 **9. Delete an api pod and keep asking.** Nothing breaks: the other two keep serving, the
 Service only sends traffic to ready pods, and the Deployment replaces the deleted one.
@@ -211,7 +290,7 @@ Both programs read environment variables only, from the `rahbar-config` ConfigMa
 | `CHROMA_HOST`, `REDIS_URL`, `OLLAMA_URL` | api, indexer | Service addresses |
 | `LLM_API_KEY` | api | Secret only, hosted mode only |
 
-**Switching the generation model.** [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) has the exact steps: to a hosted model on OpenRouter with the opt-in overlay [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml), back to the default, to another Ollama model, how to measure a model, and what each failure looks like. In hosted mode the question and three document excerpts leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered, so the default stays on Ollama. `EMBED_MODEL` is different: changing it needs a re-index.
+**Switching the generation model.** `make model M=llama`, `M=dots` or `M=gemma` switches in one step (`M=status` shows what is running); hosted models need the key Secret first. [`docs/SWITCHING-MODELS.md`](docs/SWITCHING-MODELS.md) has the details and the exact steps by hand: to a hosted model on OpenRouter with the opt-in overlay [`k8s/overlays/hosted`](k8s/overlays/hosted/kustomization.yaml), back to the default, to another Ollama model, how to measure a model, and what each failure looks like. In hosted mode the question and three document excerpts leave the machine. We measured it against llama3.2:3b in [`docs/evidence/hosted-model-comparison.txt`](docs/evidence/hosted-model-comparison.txt): same retrieval scores, no self-contradicting answers, faster, but no more questions answered, so the default stays on Ollama. `EMBED_MODEL` is different: changing it needs a re-index.
 
 ## Corpus
 

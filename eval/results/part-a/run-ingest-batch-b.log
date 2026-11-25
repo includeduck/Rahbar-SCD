@@ -1,0 +1,42 @@
+{"ts": "2026-11-21T13:50:50Z", "logger": "rahbar.indexer", "msg": "indexer starting", "dummy": false, "embed_model": "nomic-embed-text", "collection": "rahbar", "chroma": "chroma:8000", "pod": "ingest-batch-b-sl9p7"}
+EOF marker not found
+batch  document                                       quality      completeness recency      uniqueness   decision
+A      academic-rules-handbook-jun-2026.pdf           pass         pass         pass         pass         accept
+A      annual-report-2019-20.pdf                      pass         pass         FAIL         pass         archive
+        recency: newer version 2023-24 (annual-report-2023-24) in family annual-report
+A      annual-report-2023-24.pdf                      pass         pass         pass         pass         accept
+A      faculty-entrepreneurship-and-technical-start-u pass         pass         pass         pass         accept
+A      fee-structure-page.html                        pass         pass         FAIL         pass         archive
+        recency: newer version 2027-28 (fee-structure-2027-28-revision) in family fee-structure-page
+A      grading-page.html                              pass         pass         pass         pass         accept
+A      prospectus-2026-academic-rules-and-regulations pass         pass         pass         pass         accept
+A      student-handbook-jun-2026.pdf                  pass         pass         pass         pass         accept
+A      undergraduate-academic-rules-aug-2023.pdf      pass         pass         FAIL         pass         archive
+        recency: newer version 2026-06 (academic-rules-handbook-jun-2026) in family academic-rules
+batch-b academic-rules-truncated.pdf                   FAIL         FAIL         pass         pass         quarantine
+        quality: extraction failed: PdfminerException: Unexpected EOF
+        completeness: missing page count (no page extracted); truncated: no %%EOF marker at the end (file cut short)
+batch-b course-withdrawal-faq.md                       pass         pass         pass         pass         accept
+batch-b exam-hall-rules.md                             pass         pass         pass         pass         accept
+batch-b fee-structure-2027-28.md                       pass         pass         pass         pass         accept
+batch-b fee-structure-copy.html                        pass         pass         pass         FAIL         quarantine
+        uniqueness: exact duplicate of fee-structure-page (same SHA-256)
+batch-b grading-copy.html                              pass         pass         pass         FAIL         quarantine
+        uniqueness: exact duplicate of grading-page (same SHA-256)
+batch-b grading-near-duplicate.html                    pass         pass         pass         FAIL         quarantine
+        uniqueness: near-duplicate of grading-page (cosine 1.0000 >= 0.97)
+batch-b library-services-guide.md                      pass         pass         pass         pass         accept
+batch-b garbled-scan.txt                               FAIL         pass         pass         pass         quarantine
+        quality: garbled: only 2% of characters are letters (< 55%)
+batch-b untitled-notice.md                             pass         FAIL         pass         pass         quarantine
+        completeness: missing title; date or version
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "grading-page-copy", "file": "grading-copy.html", "to": "/corpus/quarantine/20261121T135051Z/batch-b/grading-copy.html", "failed": {"uniqueness": "exact duplicate of grading-page (same SHA-256)"}}
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "fee-structure-page-copy", "file": "fee-structure-copy.html", "to": "/corpus/quarantine/20261121T135051Z/batch-b/fee-structure-copy.html", "failed": {"uniqueness": "exact duplicate of fee-structure-page (same SHA-256)"}}
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "grading-page-mirror", "file": "grading-near-duplicate.html", "to": "/corpus/quarantine/20261121T135051Z/batch-b/grading-near-duplicate.html", "failed": {"uniqueness": "near-duplicate of grading-page (cosine 1.0000 >= 0.97)"}}
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "academic-rules-handbook-partial-download", "file": "academic-rules-truncated.pdf", "to": "/corpus/quarantine/20261121T135051Z/batch-b/academic-rules-truncated.pdf", "failed": {"quality": "extraction failed: PdfminerException: Unexpected EOF", "completeness": "missing page count (no page extracted); truncated: no %%EOF marker at the end (file cut short)"}}
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "scanned-notice-ocr-output", "file": "garbled-scan.txt", "to": "/corpus/quarantine/20261121T135051Z/batch-b/garbled-scan.txt", "failed": {"quality": "garbled: only 2% of characters are letters (< 55%)"}}
+{"ts": "2026-11-21T13:52:50Z", "logger": "rahbar.indexer", "msg": "quarantined", "doc_id": "untitled-notice", "file": "untitled-notice.md", "to": "/corpus/quarantine/20261121T135051Z/batch-b/untitled-notice.md", "failed": {"completeness": "missing title; date or version"}}
+
+ingestion run 20261121T135051Z into rahbar-nomic-embed-text-c400o50: 25 chunks embedded, 678 reused, 0 deleted; documents: added 4, replaced 0, unchanged 8, archived 1, restored 0, quarantined 6, deleted 0
+{"ts": "2026-11-21T13:52:58Z", "logger": "rahbar.indexer", "msg": "ingestion finished", "collection": "rahbar-nomic-embed-text-c400o50", "embedded_chunks": 25, "reused_chunks": 678, "deleted_chunks": 0, "added": 4, "replaced": 0, "unchanged": 8, "archived": 1, "restored": 0, "quarantined": 6, "deleted": 0, "fingerprints_embedded": 6, "verify_report": "/corpus/reports/verify-20261121T135051Z.json", "ingest_report": "/corpus/reports/ingest-20261121T135051Z.json"}
+{"ts": "2026-11-21T13:52:58Z", "logger": "rahbar.indexer", "msg": "indexer finished", "chunks": 703, "seconds": 127.8}

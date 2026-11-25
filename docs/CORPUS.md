@@ -114,6 +114,6 @@ conduct), never about whether hostels exist.
 
 ## Still to do before submission
 
-- [ ] Add a before-and-after OCR sample of the 2023 rules to `docs/PIPELINE.md`.
-- [ ] Confirm the exact `section` labels our chunker produces for the clauses above, so
-      `eval/golden.yaml` matches them.
+- [x] Add a before-and-after OCR sample of the 2023 rules to `docs/PIPELINE.md` (section 2, 11 Nov).
+- [x] Confirm the exact `section` labels our chunker produces for the clauses above, so
+      `eval/golden.yaml` matches them (done on 7 Nov; q04 relabelled on 11 Nov after the footer fix).

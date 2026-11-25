@@ -1,0 +1,38 @@
+{
+ "_about": "Module-level embedding test (Assignment 03, Part B). Paraphrase pairs ask the same thing in different words; unrelated pairs are two questions from the same university domain about different topics, so the gap measures meaning, not vocabulary. Synthetic, written for this test.",
+ "paraphrase": [
+  ["What CGPA do I need to avoid academic warning?", "What is the minimum grade point average to stay off academic warning?"],
+  ["How much absence can the Head of Department condone?", "Up to what percentage of missed classes can the HoD excuse?"],
+  ["Can FYP credits be transferred from another university?", "Are final year project credits from a different institution accepted?"],
+  ["How many grade points is a B+ worth?", "What is the grade point value of a B plus?"],
+  ["When must a failed course be repeated?", "If I fail a course, by when do I have to take it again?"],
+  ["Can I register for more than five courses in one semester?", "Is it allowed to take over five courses in a single term?"],
+  ["What is the tuition fee per credit hour for BS students?", "How much does one credit hour cost for an undergraduate BS programme?"],
+  ["Which campuses offer on-campus hostels?", "At which campuses can students live in a hostel inside the campus?"],
+  ["What happens after several semesters on academic warning?", "What is the consequence of staying on academic warning for consecutive semesters?"],
+  ["Is attendance compulsory in lectures?", "Do students have to attend every class?"],
+  ["How do I withdraw from a course?", "What is the procedure to drop out of a course I registered for?"],
+  ["Are mobile phones allowed in the exam hall?", "Can I bring my phone into the examination room?"],
+  ["What does the policy say about using AI tools in assignments?", "Am I allowed to use generative AI like ChatGPT for my coursework?"],
+  ["When is the library open?", "What are the library's opening hours?"],
+  ["Is the security deposit refundable?", "Do I get the security deposit back when I leave?"],
+  ["What grade is given for a withdrawn course?", "Which letter appears on the transcript when a course is withdrawn?"]
+ ],
+ "unrelated": [
+  ["What CGPA do I need to avoid academic warning?", "When is the library open?"],
+  ["How much absence can the Head of Department condone?", "Is the security deposit refundable?"],
+  ["Can FYP credits be transferred from another university?", "Are mobile phones allowed in the exam hall?"],
+  ["How many grade points is a B+ worth?", "Which campuses offer on-campus hostels?"],
+  ["When must a failed course be repeated?", "What does the policy say about using AI tools in assignments?"],
+  ["Can I register for more than five courses in one semester?", "What is the admission fee?"],
+  ["What is the tuition fee per credit hour for BS students?", "How early must I reach the exam hall?"],
+  ["Which campuses offer on-campus hostels?", "What happens after several semesters on academic warning?"],
+  ["Is attendance compulsory in lectures?", "How many books can I borrow from the library?"],
+  ["How do I withdraw from a course?", "Who funds the university's research projects?"],
+  ["Are mobile phones allowed in the exam hall?", "What is the grade point value of a B plus?"],
+  ["What does the policy say about using AI tools in assignments?", "Can study rooms be booked at the library?"],
+  ["When is the library open?", "What is the refund policy for dropped courses?"],
+  ["Is the security deposit refundable?", "How many credit hours is the final year project?"],
+  ["What grade is given for a withdrawn course?", "Where is the Peshawar campus hostel?"]
+ ]
+}

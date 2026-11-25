@@ -1,0 +1,21 @@
+$ kubectl -n rahbar port-forward svc/api 18000:8000 &
+Forwarding from 127.0.0.1:18000 -> 8000
+Forwarding from [::1]:18000 -> 8000
+
+$ curl -s localhost:18000/metrics | grep -E "^rahbar_(requests_total|responses_total|injection_flagged_total|cache_(hits|misses)_total|top1_similarity_(count|sum)|stage_seconds_(count|sum))"
+rahbar_requests_total{path="/healthz",status="200"} 183.0
+rahbar_requests_total{path="/readyz",status="200"} 365.0
+rahbar_requests_total{path="/api/ask",status="200"} 6.0
+rahbar_requests_total{path="/metrics",status="200"} 1.0
+rahbar_cache_hits_total 0.0
+rahbar_cache_misses_total 0.0
+rahbar_responses_total{outcome="answered"} 5.0
+rahbar_responses_total{outcome="abstain_model"} 1.0
+rahbar_top1_similarity_count 6.0
+rahbar_top1_similarity_sum 4.695935
+rahbar_stage_seconds_count{stage="retrieve"} 6.0
+rahbar_stage_seconds_sum{stage="retrieve"} 0.21652401600377633
+rahbar_stage_seconds_count{stage="generate"} 6.0
+rahbar_stage_seconds_sum{stage="generate"} 131.8538743939971
+rahbar_stage_seconds_count{stage="total"} 6.0
+rahbar_stage_seconds_sum{stage="total"} 133.53040000000001

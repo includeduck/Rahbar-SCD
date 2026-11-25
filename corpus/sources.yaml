@@ -14,6 +14,7 @@ documents:
 
   # Property 2: two versions of one policy (and 7: exact clause numbers)
   - name: Undergraduate Academic Rules (Aug 2023)
+    family: academic-rules   # versions of one document (pipeline/verify.py, recency)
     url: http://nu.edu.pk/public/downloads/Academic-Rules-Undergrad-Aug-2023.pdf
     doc_version: "2023-08"
     superseded: true
@@ -22,6 +23,7 @@ documents:
       only the cover and back page extract. Needs OCR before version questions can use it.
 
   - name: Academic Rules Handbook (Jun 2026)
+    family: academic-rules   # versions of one document (pipeline/verify.py, recency)
     url: https://nu.edu.pk/public/downloads/Academic_Rules_Handbook_2026.pdf
     doc_version: "2026-06"
     superseded: false
@@ -43,6 +45,7 @@ documents:
 
   # Property 4: tables, and versions over time
   - name: Annual Report 2019-20
+    family: annual-report   # versions of one document (pipeline/verify.py, recency)
     url: https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2019-20.pdf
     doc_version: "2019-20"
     superseded: true
@@ -51,6 +54,7 @@ documents:
       repeat verbatim in 2023-24, so it is marked superseded to keep the current edition first.
 
   - name: Annual Report 2023-24
+    family: annual-report   # versions of one document (pipeline/verify.py, recency)
     url: https://nu.edu.pk/public/downloads/AnnualReportForm/Annual Report 2023-24.pdf
     doc_version: "2023-24"
     superseded: false

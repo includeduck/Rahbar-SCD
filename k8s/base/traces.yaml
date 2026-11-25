@@ -1,0 +1,25 @@
+# Query traces (Assignment 03, D1 and Part F). Every api pod prints each trace to stdout as a
+# JSON line ({"type": "trace", ...}) and also appends it to /traces/traces-<pod>.jsonl on this
+# volume: one file per pod, so no two writers share a file, and the traces outlive the pod.
+#
+#   kubectl -n rahbar exec deploy/api -- python -m app.trace_tool --list
+#   kubectl -n rahbar exec deploy/api -- python -m app.trace_tool <trace id>
+#   kubectl -n rahbar exec deploy/api -- python -m app.trace_summary --last 1h
+#
+# ReadWriteOnce is enough on minikube, where every api pod runs on the one node. On a
+# multi-node cluster it would pin all api pods to one node: there the stdout copy, collected
+# by a log shipper, is the trace store, and this volume would be ReadWriteMany or dropped.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: traces
+  namespace: rahbar
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: rahbar
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

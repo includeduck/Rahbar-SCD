@@ -98,6 +98,62 @@ class TestClean:
         assert "finance" in cleaned.pages[0].text
         assert "\u2019" not in cleaned.pages[0].text
 
+    def test_strips_running_headers_that_carry_the_page_number(self) -> None:
+        """Seen in the Student Handbook: "34 Student Handbook 2026", "35 Student Handbook
+        2026", ... at the top of every page. They differ only in the number."""
+        pages = [Page(source="h.pdf", page=i,
+                      text=f"{i + 33} Student Handbook 2026\nRule text on page {i}.\nPage {i} of 4")
+                 for i in range(1, 5)]
+        cleaned = clean(Document(source="h.pdf", doc_version="2026", superseded=False,
+                                 pages=pages))
+        for page in cleaned.pages:
+            assert "Student Handbook 2026" not in page.text
+            assert " of 4" not in page.text
+            assert page.text.startswith("Rule text on page")
+
+    def test_the_handbook_footer_on_facing_pages_and_as_a_table_row(self) -> None:
+        """The real Student Handbook layout: the footer alternates between "Student Handbook
+        2026 3" and "4 Student Handbook 2026", and pdfplumber also returns it as a table row."""
+        def footer(n: int) -> str:
+            line = f"Student Handbook 2026 {n}" if n % 2 else f"{n} Student Handbook 2026"
+            cells = f"|  | Student Handbook 2026 | {n} |" if n % 2 else \
+                f"| {n} | Student Handbook 2026 |  |"
+            return f"{line}\n{cells}"
+        pages = [Page(source="h.pdf", page=n, text=f"Rule text on page {n}.\n{footer(n)}")
+                 for n in range(3, 9)]
+        cleaned = clean(Document(source="h.pdf", doc_version="2026", superseded=False,
+                                 pages=pages))
+        for page in cleaned.pages:
+            assert "Student Handbook" not in page.text
+            assert page.text.startswith("Rule text on page")
+
+    def test_a_clause_heading_is_not_mistaken_for_a_header(self) -> None:
+        """Each page opens with a different numbered clause: none repeats, so all stay."""
+        titles = ["Attendance", "Grading", "Examinations", "Fees"]
+        pages = [Page(source="r.pdf", page=i, text=f"{i}.1 {titles[i - 1]}\nBody {i}.")
+                 for i in range(1, 5)]
+        cleaned = clean(Document(source="r.pdf", doc_version="2026", superseded=False,
+                                 pages=pages))
+        for i, page in enumerate(cleaned.pages, 1):
+            assert page.text.startswith(f"{i}.1 {titles[i - 1]}")
+
+    def test_lone_numbers_at_page_tops_are_not_stripped_elsewhere(self) -> None:
+        """Lines such as "1.21" and "2.00" have no words; they must never be treated as a
+        running header, or clause numbers and table values would vanish everywhere."""
+        pages = [Page(source="t.pdf", page=i, text=f"{i}.{i}0\nGrade points\n{i}.00")
+                 for i in range(1, 5)]
+        cleaned = clean(Document(source="t.pdf", doc_version="2026", superseded=False,
+                                 pages=pages))
+        for i, page in enumerate(cleaned.pages, 1):
+            assert f"{i}.{i}0" in page.text and f"{i}.00" in page.text
+
+    def test_drops_empty_table_rows_but_keeps_real_ones(self) -> None:
+        page = Page(source="t.pdf", page=1,
+                    text="| Program | Fee |\n| BS | Rs. 12,000 |\n|  |  |  |\n| | |")
+        cleaned = clean(Document(source="t.pdf", doc_version="2026", superseded=False,
+                                 pages=[page]))
+        assert cleaned.pages[0].text.splitlines() == ["| Program | Fee |", "| BS | Rs. 12,000 |"]
+
     def test_keeps_clause_numbers(self) -> None:
         """Clause numbers like 5.4 should survive cleaning."""
         page = Page(source="test.pdf", page=1, text="5.4 Academic Warning\nCGPA below 2.00")

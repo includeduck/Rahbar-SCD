@@ -1,0 +1,30 @@
+trace summary, 2026-11-21T14:30:00+00:00 to 2026-11-21T14:40:00+00:00
+  11 queries, first 2026-11-21T14:34:17.200Z, last 2026-11-21T14:38:24.549Z
+
+outcomes:  abstain_model 6, answered 2, cache_hit 1, abstain_floor 1, support 1
+abstention rate   63.6%  (abstain_floor + abstain_model, over all queries)
+cache hit rate    10.0%  (1 hit, 9 miss, 1 not looked up)
+injection attempts flagged  2  input rail 1, retrieval rail 1
+
+top-1 similarity (n=9, cache hits excluded): min 0.569  p25 0.692  median 0.705  p75 0.805  max 0.888
+  [0.00, 0.40)      0 
+  [0.40, 0.45)      0 
+  [0.45, 0.50)      0 
+  [0.50, 0.55)      0 
+  [0.55, 0.60)      1 ##########
+  [0.60, 0.65)      1 ##########
+  [0.65, 0.70)      1 ##########
+  [0.70, 0.75)      2 ####################
+  [0.75, 0.80)      1 ##########
+  [0.80, 1.00]      3 ##############################
+
+latency per stage        n    p50 ms    p95 ms
+  embed                   11        89      1016
+  cache                   10        13        99
+  retrieve                 9        36        44
+  generate                 8     21424     60484
+  total                   11     21403     60526
+  total_when_generated     8     21466     60526
+
+guardrail actions: output:model_abstained 6, input:flagged 1, retrieval:dropped_passage 1, output:dropped_citation 1, retrieval:abstain_below_floor 1, input:support_reply 1
+collections served: rahbar-nomic-embed-text-c400o50 9, (no retrieval) 1

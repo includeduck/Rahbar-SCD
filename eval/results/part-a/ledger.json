@@ -1,0 +1,162 @@
+{
+ "docs": {
+  "academic-rules-handbook-jun-2026": {
+   "file": "academic-rules-handbook-jun-2026.pdf",
+   "batch": "A",
+   "family": "academic-rules",
+   "title": "Academic Rules Handbook (Jun 2026)",
+   "doc_version": "2026-06",
+   "sha256": "4cfee3e191b84aeb9168f17656c7642212ff52b90f2780d028b33c154aa74b62",
+   "chunks": 251,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "annual-report-2019-20": {
+   "file": "annual-report-2019-20.pdf",
+   "batch": "A",
+   "family": "annual-report",
+   "title": "Annual Report 2019-20",
+   "doc_version": "2019-20",
+   "sha256": "4d1961e340b13273bb039805ab5fd5e2c7bd0144a5bd5870f2ce4da13becd650",
+   "chunks": 48,
+   "superseded": true,
+   "status": "archived",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "annual-report-2023-24": {
+   "file": "annual-report-2023-24.pdf",
+   "batch": "A",
+   "family": "annual-report",
+   "title": "Annual Report 2023-24",
+   "doc_version": "2023-24",
+   "sha256": "3c9d89e84af24df4b939f10e32c620a3877b276acea1db52f1aae4098e5c057a",
+   "chunks": 168,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "faculty-entrepreneurship-and-technical-start-ups-policy": {
+   "file": "faculty-entrepreneurship-and-technical-start-ups-policy.pdf",
+   "batch": "A",
+   "family": "faculty-entrepreneurship-and-technical-start-ups-policy",
+   "title": "Faculty Entrepreneurship and Technical Start-ups Policy",
+   "doc_version": "2022-05",
+   "sha256": "c2d5c7648d1593daf34d5c0596ede476e8984b0551830cc1690017e6e22f1359",
+   "chunks": 5,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "fee-structure-page": {
+   "file": "fee-structure-page.html",
+   "batch": "A",
+   "family": "fee-structure-page",
+   "title": "Fee Structure page",
+   "doc_version": "2026-27",
+   "sha256": "ec8872ae77cac7e96e20e6979933f36b00aaeb0ab3f668a2116e521c655e7b90",
+   "chunks": 9,
+   "superseded": true,
+   "status": "archived",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "grading-page": {
+   "file": "grading-page.html",
+   "batch": "A",
+   "family": "grading-page",
+   "title": "Grading page",
+   "doc_version": "2026",
+   "sha256": "66a995b4d8474e914d37bfa14755a5361f47327d5a7314f9b7ec15d9b6176e6e",
+   "chunks": 7,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "prospectus-2026-academic-rules-and-regulations": {
+   "file": "prospectus-2026-academic-rules-and-regulations.pdf",
+   "batch": "A",
+   "family": "prospectus-2026-academic-rules-and-regulations",
+   "title": "Prospectus 2026 - Academic Rules and Regulations",
+   "doc_version": "2026",
+   "sha256": "a7e7f6896a59eb9413c9e8826e6c4c018ebe52045d10cebfcba92ded10a3174a",
+   "chunks": 18,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "student-handbook-jun-2026": {
+   "file": "student-handbook-jun-2026.pdf",
+   "batch": "A",
+   "family": "student-handbook-jun-2026",
+   "title": "Student Handbook (Jun 2026)",
+   "doc_version": "2026-06",
+   "sha256": "717eb4b8d37e50185ffe952735c08ef19edd16074d547f10ebd22cf23da67c4d",
+   "chunks": 71,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "undergraduate-academic-rules-aug-2023": {
+   "file": "undergraduate-academic-rules-aug-2023.pdf",
+   "batch": "A",
+   "family": "academic-rules",
+   "title": "Undergraduate Academic Rules (Aug 2023)",
+   "doc_version": "2023-08",
+   "sha256": "cddfe1f5e9770132e27d686abd1c2e6742ef4732f0c2f431ed514bc1691d2004",
+   "chunks": 101,
+   "superseded": true,
+   "status": "archived",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "course-withdrawal-faq": {
+   "file": "course-withdrawal-faq.md",
+   "batch": "batch-b",
+   "family": "course-withdrawal-faq",
+   "title": "Course Withdrawal FAQ",
+   "doc_version": "2026-11",
+   "sha256": "796555a40d63749332fff75ccbd4493d5f7e703fc827b1a4fb890eb0975a4c56",
+   "chunks": 0,
+   "superseded": false,
+   "status": "deleted",
+   "updated_at": "2026-11-21T13:52:53Z",
+   "deleted_at": "2026-11-21T13:56:23Z"
+  },
+  "examination-hall-rules": {
+   "file": "exam-hall-rules.md",
+   "batch": "batch-b",
+   "family": "examination-hall-rules",
+   "title": "Examination Hall Rules",
+   "doc_version": "2026-11",
+   "sha256": "8e0e64a533e9be7136ac49cd896a17e4add461abef257d0cf2307339717ae360",
+   "chunks": 12,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "fee-structure-2027-28-revision": {
+   "file": "fee-structure-2027-28.md",
+   "batch": "batch-b",
+   "family": "fee-structure-page",
+   "title": "Fee Structure (2027-28 revision)",
+   "doc_version": "2027-28",
+   "sha256": "9ba6962017fb7f23196449ee87429026af69876c42e8e896966c92c613673bea",
+   "chunks": 4,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  },
+  "library-services-guide": {
+   "file": "library-services-guide.md",
+   "batch": "batch-b",
+   "family": "library-services-guide",
+   "title": "Library Services Guide",
+   "doc_version": "2026-11",
+   "sha256": "1ddef43683a99b619669b89e5bf4ec7281caac56ca5a14e0808b1c2cf6e81445",
+   "chunks": 5,
+   "superseded": false,
+   "status": "active",
+   "updated_at": "2026-11-21T14:01:02Z"
+  }
+ },
+ "pins": {}
+}

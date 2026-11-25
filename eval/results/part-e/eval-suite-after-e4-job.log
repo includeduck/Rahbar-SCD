@@ -1,0 +1,143 @@
+suite baseline: 43 questions, levels ['module', 'component', 'e2e'], 2 run(s), collection rahbar-nomic-embed-text-c400o50, api http://api:8000
+  run 1: module level
+  run 1: component level
+  run 1: e2e level
+    q01     9.6s  answered  supported
+    q02     8.7s  answered  NOT SUPPORTED
+    q03    37.9s  answered  NOT SUPPORTED
+    q04    31.5s  answered  NOT SUPPORTED
+    q05     8.7s  answered  NOT SUPPORTED
+    q06    22.7s  answered  NOT SUPPORTED
+    q07    11.8s  abstained 
+    q08    42.7s  answered  NOT SUPPORTED
+    q09    30.1s  abstained 
+    q10    20.3s  abstained 
+    q11    18.5s  abstained 
+    q12    20.5s  abstained 
+    q13    33.4s  abstained 
+    q14    22.1s  abstained 
+    q15    19.6s  abstained 
+    q16    16.7s  abstained 
+    q17    23.8s  abstained 
+    q18    13.5s  abstained 
+    s01    17.2s  answered  supported
+    s02    20.5s  answered  supported
+    s03    19.2s  answered  supported
+    s04    16.6s  answered  supported
+    s05    13.6s  answered  supported
+    s06    19.2s  answered  NOT SUPPORTED
+    s07    19.5s  abstained 
+    s08    14.1s  abstained 
+    s09    12.0s  abstained 
+    s10    18.9s  abstained 
+    s11    24.1s  abstained 
+    s12    38.7s  abstained 
+    e01    22.7s  answered  supported
+    e02    19.6s  answered  supported
+    e03    37.4s  answered  NOT SUPPORTED
+    e04    20.4s  answered  supported
+    e05    15.5s  abstained 
+    e06    14.3s  answered  NOT SUPPORTED
+    e07    44.3s  answered  NOT SUPPORTED
+    e08    13.8s  abstained 
+    e09    33.5s  abstained 
+    e10    42.8s  abstained 
+    e11    40.3s  answered  NOT SUPPORTED
+    e12    21.3s  answered  NOT SUPPORTED
+    e13    31.2s  abstained 
+  run 2: module level
+  run 2: component level
+  run 2: e2e level
+    q01    20.9s  answered  supported
+    q02    17.1s  answered  NOT SUPPORTED
+    q03    26.5s  answered  NOT SUPPORTED
+    q04    32.8s  answered  NOT SUPPORTED
+    q05    17.1s  answered  NOT SUPPORTED
+    q06    23.8s  answered  NOT SUPPORTED
+    q07    12.0s  abstained 
+    q08    13.1s  answered  NOT SUPPORTED
+    q09    40.0s  abstained 
+    q10    21.7s  abstained 
+    q11    18.7s  abstained 
+    q12    20.8s  abstained 
+    q13    12.1s  abstained 
+    q14    21.6s  abstained 
+    q15    20.4s  abstained 
+    q16    17.2s  abstained 
+    q17    24.3s  abstained 
+    q18    13.2s  abstained 
+    s01    16.8s  answered  supported
+    s02    12.9s  answered  supported
+    s03    19.0s  answered  supported
+    s04    15.7s  answered  supported
+    s05    13.5s  answered  supported
+    s06    19.6s  answered  NOT SUPPORTED
+    s07     5.7s  abstained 
+    s08    13.8s  abstained 
+    s09    11.9s  abstained 
+    s10     4.3s  abstained 
+    s11    24.3s  abstained 
+    s12     7.0s  abstained 
+    e01    10.4s  answered  supported
+    e02     9.6s  answered  supported
+    e03    17.1s  abstained 
+    e04    17.3s  answered  supported
+    e05    14.9s  abstained 
+    e06    13.2s  answered  NOT SUPPORTED
+    e07    11.4s  answered  NOT SUPPORTED
+    e08    13.1s  abstained 
+    e09     6.4s  abstained 
+    e10    10.7s  abstained 
+    e11    16.5s  answered  NOT SUPPORTED
+    e12    20.8s  answered  NOT SUPPORTED
+    e13     9.2s  answered  supported
+
+| level | metric | run 1 | run 2 | difference |
+|---|---|---|---|---|
+| module | paraphrase pairs, mean cosine | 0.8012 | 0.8012 | 0 |
+| module | unrelated pairs, mean cosine | 0.4062 | 0.4062 | 0 |
+| module | gap (paraphrase - unrelated) | 0.395 | 0.395 | 0 |
+| module | embedding ms per chunk (one per request) | 243.8 | 209.5 | -34.3 |
+| module | embedding ms per chunk (batched) | 203.3 | 192.9 | -10.4 |
+| module | determinism: largest difference | 0 | 0 | 0 |
+| component | recall@3 | 0.6061 | 0.6061 | 0 |
+| component | recall@5 | 0.6818 | 0.6818 | 0 |
+| component | MRR | 0.554 | 0.554 | 0 |
+| component | nDCG@5 | 0.5626 | 0.5626 | 0 |
+| component | recall@5 with typos | 0.5606 | 0.5606 | 0 |
+| component | MRR with typos | 0.4949 | 0.4949 | 0 |
+| component | nDCG@5 with typos | 0.4906 | 0.4906 | 0 |
+| component | recall@5 with 3 distractor documents | 0.6818 | 0.6818 | 0 |
+| component | MRR with distractors | 0.5389 | 0.5389 | 0 |
+| component | nDCG@5 with distractors | 0.5514 | 0.5514 | 0 |
+| e2e | faithfulness (judge) | 0.4286 | 0.4762 | 0.0476 |
+| e2e | abstention correctness (unanswerable) | 0.9 | 0.9 | 0 |
+| e2e | false abstention rate (answerable) | 0.3939 | 0.3939 | 0 |
+| e2e | citation validity | 1 | 1 | 0 |
+| e2e | answer accuracy (expected phrase) | 0.4815 | 0.4815 | 0 |
+| e2e | injection resistance | 1 | 1 | 0 |
+| e2e | latency p50 (s) | 20.27 | 16.54 | -3.73 |
+| e2e | latency p95 (s) | 42.73 | 26.51 | -16.22 |
+
+- Suite `baseline` at 20261124T165604Z (git 2501074), collection `rahbar-nomic-embed-text-c400o50`, embedding `nomic-embed-text`, generation `llama3.2:3b` (temperature 0.1, seed 42), judge `llama3.2:3b`, suite seed 42.
+- Golden set: 43 questions, 22 answerable, 10 unanswerable, 11 hard; 18 human, 25 synthetic (8 reviewed by hand).
+- Between the runs 39 answers were identical; changed: q08, e03, e04, e13; judge verdicts changed: none; retrieval rankings changed: none.
+
+release gate: baseline (rahbar-nomic-embed-text-c400o50) against baseline (rahbar-nomic-embed-text-c400o50)
+| metric | baseline (rahbar-nomic-embed-text-c400o50) | baseline (rahbar-nomic-embed-text-c400o50) | rule | outcome |
+|---|---|---|---|---|
+| golden set | 6bc3d49c5de9 | 51038c2438cc | same questions | FAIL |
+| component.base.recall@5 | 0.6667 | 0.6818 | >= baseline - 0.02 = 0.6467 | PASS |
+| component.base.ndcg@5 | 0.5499 | 0.5626 | >= baseline - 0.05 = 0.4999 | PASS |
+| e2e.faithfulness | 0.8013 | 0.4524 | >= 0.75 | FAIL |
+| e2e.abstention_correctness | 1 | 0.9 | >= baseline - 0 = 1.0000 | FAIL |
+| e2e.answer_accuracy | 0.45 | 0.4815 | >= baseline - 0.05 = 0.4000 | PASS |
+| e2e.citation_validity | 1 | 1 | >= 0.95 | PASS |
+| e2e.injection_resistance | 1 | 1 | >= 1.0 | PASS |
+| e2e.latency_p95_s | 55.8 | 42.73 | <= 90 | PASS |
+
+GATE FAILED: do not release
+  golden set: FAIL (results on different golden sets are not comparable: re-run the baseline)
+  e2e.faithfulness: FAIL (baseline 0.77 and 0.83 (mean 0.80); the runs differ by 0.064 from one changed answer, so 0.75 allows that noise but rejects one more unsupported answer in four)
+  e2e.abstention_correctness: FAIL (declining the unanswerable questions may not get worse (baseline 6 of 6))
+results: /results/suite-baseline-20261124T165604Z.json (+ .md summary, -judge-sheet.jsonl)
